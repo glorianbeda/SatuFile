@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  satufile:
+    build: .
+    container_name: satufile
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - SATUFILE_ADDRESS=0.0.0.0
+      - SATUFILE_PORT=8080
+      - SATUFILE_ROOT=/data
+      - SATUFILE_DATABASE=/data/satufile.db
+    volumes:
+      - ./data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s

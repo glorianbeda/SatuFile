@@ -1,0 +1,84 @@
+version: "3"
+
+vars:
+  BINARY_NAME: satufile
+  FRONTEND_DIR: frontend
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  # Development
+  dev:
+    desc: Run backend and frontend in development mode
+    deps: [dev:backend, dev:frontend]
+
+  dev:backend:
+    desc: Run Go backend with hot reload (requires air)
+    dir: .
+    cmds:
+      - go run main.go
+
+  dev:frontend:
+    desc: Run Vite dev server
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - npm run dev
+
+  # Build
+  build:
+    desc: Build both frontend and backend
+    cmds:
+      - task: build:frontend
+      - task: build:backend
+
+  build:frontend:
+    desc: Build frontend for production
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - npm run build
+
+  build:backend:
+    desc: Build Go binary
+    cmds:
+      - go build -o {{.BINARY_NAME}} .
+
+  # Clean
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -f {{.BINARY_NAME}}
+      - rm -rf {{.FRONTEND_DIR}}/dist
+
+  # Test
+  test:
+    desc: Run all tests
+    cmds:
+      - go test ./...
+
+  # Lint
+  lint:
+    desc: Run linters
+    cmds:
+      - task: lint:backend
+      - task: lint:frontend
+
+  lint:backend:
+    desc: Lint Go code
+    cmds:
+      - golangci-lint run
+
+  lint:frontend:
+    desc: Lint frontend code
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - npm run lint
+
+  # Install dependencies
+  install:
+    desc: Install all dependencies
+    cmds:
+      - go mod download
+      - cd {{.FRONTEND_DIR}} && npm install

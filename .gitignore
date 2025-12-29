@@ -1,0 +1,62 @@
+# Binaries
+satufile
+*.exe
+
+# Go
+*.o
+*.a
+*.so
+
+# Dependencies
+vendor/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Test
+coverage.out
+coverage.html
+
+# Temporary
+tmp/
+temp/
+
+# Database
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Data directory (user uploaded files)
+data/
+
+# Agent / AI files
+.agent/
+
+# Build outputs
+dist/
+build/
+
+# OpenSpec
+openspec/
