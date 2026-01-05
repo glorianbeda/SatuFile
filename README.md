@@ -6,10 +6,12 @@ A modern cloud drive web application inspired by filebrowser.
 
 - 📁 File/folder browsing with list and grid views
 - 📤 File upload with drag & drop
-- 🔐 User authentication with JWT
-- 🎨 Modern UI with dark mode support
+- 🔐 User authentication with JWT (single-user deployment)
+- 🎨 Modern UI with Material-UI
 - 📱 Responsive design for mobile
 - 🔒 Protected core folders (Documents, Pictures, Videos, Audio, Downloads)
+- 🔗 Share links for files and folders
+- 🌐 Multi-language support (English & Indonesian)
 
 ## Quick Start
 
@@ -45,6 +47,22 @@ On first run, a default admin account is created:
 
 > ⚠️ You will be prompted to change this password on first login.
 
+## Changing Admin Password
+
+To change the admin password:
+
+1. Log in with your current credentials
+2. Go to **Settings** → **Keamanan** (Security)
+3. Enter your current password and new password
+4. Click **Simpan Perubahan** (Save Changes)
+
+Or via command line:
+
+```bash
+# Change password (requires direct database access)
+# This feature is not yet implemented in CLI
+```
+
 ## Core Folders
 
 The following folders are automatically created and **cannot be deleted**:
@@ -56,6 +74,30 @@ The following folders are automatically created and **cannot be deleted**:
 | Videos | Video files |
 | Audio | Music and audio files |
 | Downloads | Downloaded files |
+
+## Share Links
+
+SatuFile allows you to share files and folders via public links:
+
+1. Right-click on any file or folder
+2. Select **Share** from the context menu
+3. Set expiration (optional)
+4. Copy the generated link
+
+Manage all your shares in **Settings** → **Share**
+
+## Language Support
+
+SatuFile supports multiple languages:
+
+- 🇬🇧 **English** (en)
+- 🇮🇩 **Bahasa Indonesia** (id)
+
+To change language:
+
+1. Go to **Settings** → **Profil** (Profile)
+2. Select your preferred language from the dropdown
+3. Changes apply immediately
 
 ## File Permissions
 

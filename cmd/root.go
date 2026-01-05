@@ -105,6 +105,12 @@ func runServer(cmd *cobra.Command, args []string) error {
 	}
 	defer storage.Close()
 
+	// Initialize storage backend
+	storageBackend, err := storage.New()
+	if err != nil {
+		return fmt.Errorf("failed to create storage: %w", err)
+	}
+
 	// Initialize user repository
 	userRepo := users.NewRepository(storage.GetDB())
 
@@ -113,17 +119,26 @@ func runServer(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 
-	// Create default admin if no users exist
+	// Ensure admin user exists (v1.0 single-user deployment)
 	count, _ := userRepo.Count()
 	if count == 0 {
 		log.Println("Creating default admin user (admin/Admin123!)")
 		if err := userRepo.CreateAdmin("admin", "Admin123!"); err != nil {
 			log.Printf("Warning: failed to create admin user: %v", err)
 		}
+	} else {
+		// Verify admin exists even if count > 0
+		_, err := userRepo.GetByUsername("admin")
+		if err != nil {
+			log.Printf("Warning: No admin user found, creating default admin")
+			if err := userRepo.CreateAdmin("admin", "Admin123!"); err != nil {
+				log.Printf("Warning: failed to create admin user: %v", err)
+			}
+		}
 	}
 
 	// Create HTTP handler
-	handler := fbhttp.NewHandler(cfg, userRepo)
+	handler := fbhttp.NewHandler(cfg, userRepo, storageBackend)
 
 	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
 	log.Printf("Starting SatuFile server on http://%s", addr)

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box,
     Card,
@@ -17,66 +17,78 @@ import { Save } from '@mui/icons-material';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useToast } from '../../../contexts/ToastProvider';
 import { api } from '../../../api';
+import LanguageSelector from '../../../components/common/LanguageSelector';
+import i18n from '../../../i18n/config';
 
 export const ProfileSettings: React.FC = () => {
     const { user, updateAuth } = useAuth();
     const toast = useToast();
 
-    const [locale, setLocale] = useState(user?.locale || 'en');
     const [viewMode, setViewMode] = useState(user?.viewMode || 'list');
     const [hideDotfiles, setHideDotfiles] = useState(user?.hideDotfiles || false);
     const [singleClick, setSingleClick] = useState(user?.singleClick || false);
     const [loading, setLoading] = useState(false);
+    const [, forceUpdate] = useState({});
 
     const handleSave = async () => {
         setLoading(true);
         try {
             const updatedUser = await api.put<any>('/me', {
-                locale,
                 viewMode,
                 hideDotfiles,
                 singleClick,
             });
-            // Update local auth state with new user data
             const token = localStorage.getItem('auth-token');
             if (token) {
                 updateAuth(token, { ...user, ...updatedUser });
             }
-            toast.success('Pengaturan berhasil disimpan!');
+            toast.success(i18n.t('settings:profileUpdated'));
         } catch (err) {
-            toast.error('Gagal menyimpan pengaturan');
+            toast.error(i18n.t('settings:profileUpdateError'));
         } finally {
             setLoading(false);
         }
     };
 
+    const t = (key: string, ns: string = 'common') => i18n.t(`${ns}:${key}`);
+
+    useEffect(() => {
+        const handleLanguageChange = () => {
+            forceUpdate({});
+        };
+
+        i18n.on('languageChanged', handleLanguageChange);
+
+        return () => {
+            i18n.off('languageChanged', handleLanguageChange);
+        };
+    }, []);
+
     return (
         <Card>
             <CardContent>
                 <Typography variant="h6" gutterBottom>
-                    Preferensi
+                    {t('title', 'settings')}
                 </Typography>
                 <Divider sx={{ mb: 3 }} />
 
                 {/* Language */}
-                <FormControl fullWidth sx={{ mb: 3 }}>
-                    <InputLabel>Bahasa</InputLabel>
-                    <Select
-                        value={locale}
-                        label="Bahasa"
-                        onChange={(e) => setLocale(e.target.value)}
-                    >
-                        <MenuItem value="id">Indonesia</MenuItem>
-                        <MenuItem value="en">English</MenuItem>
-                    </Select>
-                </FormControl>
+                <Box sx={{ mb: 3 }}>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                        {t('language', 'common')}
+                    </Typography>
+                    <LanguageSelector syncToBackend={true} />
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                        {t('languageSelectorHint', 'settings')}
+                    </Typography>
+                </Box>
 
                 {/* View Mode */}
                 <FormControl fullWidth sx={{ mb: 3 }}>
-                    <InputLabel>Tampilan File</InputLabel>
+                    <InputLabel>{t('files', 'settings')}</InputLabel>
                     <Select
                         value={viewMode}
-                        label="Tampilan File"
+                        label={t('files', 'settings')}
                         onChange={(e) => setViewMode(e.target.value)}
                     >
                         <MenuItem value="list">List</MenuItem>
@@ -93,11 +105,11 @@ export const ProfileSettings: React.FC = () => {
                                 onChange={(e) => setHideDotfiles(e.target.checked)}
                             />
                         }
-                        label="Sembunyikan file tersembunyi (.dotfiles)"
+                        label={t('hideDotfiles', 'settings')}
                     />
                 </Box>
 
-                <Box sx={{ mb: 3 }}>
+                <Box sx={{ mb: 2 }}>
                     <FormControlLabel
                         control={
                             <Switch
@@ -105,7 +117,7 @@ export const ProfileSettings: React.FC = () => {
                                 onChange={(e) => setSingleClick(e.target.checked)}
                             />
                         }
-                        label="Buka file dengan single click"
+                        label={t('singleClick', 'settings')}
                     />
                 </Box>
 
@@ -121,7 +133,7 @@ export const ProfileSettings: React.FC = () => {
                         },
                     }}
                 >
-                    {loading ? 'Menyimpan...' : 'Simpan Perubahan'}
+                    {loading ? t('loading', 'common') : t('save', 'common')}
                 </Button>
             </CardContent>
         </Card>

@@ -36,12 +36,10 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
     const downloadUrl = file ? filesApi.getDownloadUrl(file.path) : '';
     const ext = file?.extension?.toLowerCase() || file?.name.split('.').pop()?.toLowerCase() || '';
 
-    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
+    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext);
     const isPdf = ext === 'pdf';
     const isAudio = ['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(ext);
     const isVideo = ['mp4', 'webm', 'avi', 'mov', 'mkv'].includes(ext);
-    const isText = ['txt', 'md', 'json', 'yaml', 'yml', 'xml', 'js', 'ts', 'jsx', 'tsx', 'css', 'html', 'go', 'py', 'sh', 'log', 'csv'].includes(ext);
-    const [textContent, setTextContent] = useState<string | null>(null);
 
     // Fetch media with credentials when modal opens
     useEffect(() => {
@@ -49,7 +47,6 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
             setMediaSrc(null);
             setLoading(true);
             setError(false);
-            setTextContent(null);
             return;
         }
 
@@ -59,7 +56,6 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
             try {
                 setLoading(true);
                 setError(false);
-                setTextContent(null);
 
                 const token = localStorage.getItem('auth-token');
                 const response = await fetch(downloadUrl, {
@@ -69,22 +65,12 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
 
                 if (!response.ok) throw new Error('Failed to load');
 
-                // For text files, read as text instead of blob
-                if (isText) {
-                    const text = await response.text();
-                    if (isMounted) {
-                        setTextContent(text);
-                        setMediaSrc('text'); // Placeholder to indicate content loaded
-                        setLoading(false);
-                    }
-                } else {
-                    const blob = await response.blob();
-                    const objectUrl = URL.createObjectURL(blob);
+                const blob = await response.blob();
+                const objectUrl = URL.createObjectURL(blob);
 
-                    if (isMounted) {
-                        setMediaSrc(objectUrl);
-                        setLoading(false);
-                    }
+                if (isMounted) {
+                    setMediaSrc(objectUrl);
+                    setLoading(false);
                 }
             } catch {
                 if (isMounted) {
@@ -102,7 +88,7 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
                 URL.revokeObjectURL(mediaSrc);
             }
         };
-    }, [open, file, downloadUrl, isText]);
+    }, [open, file, downloadUrl]);
 
     // Reset zoom when file changes
     useEffect(() => {
@@ -237,27 +223,9 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
                             </Box>
                         )}
 
-                        {isText && textContent && (
-                            <Box sx={{
-                                p: 2,
-                                width: '100%',
-                                maxHeight: '70vh',
-                                overflow: 'auto',
-                                bgcolor: 'grey.900',
-                            }}>
-                                <pre style={{
-                                    margin: 0,
-                                    fontFamily: 'monospace',
-                                    fontSize: 14,
-                                    whiteSpace: 'pre-wrap',
-                                    color: '#e0e0e0',
-                                }}>
-                                    {textContent}
-                                </pre>
-                            </Box>
-                        )}
 
-                        {!isImage && !isPdf && !isAudio && !isVideo && !isText && (
+
+                        {!isImage && !isPdf && !isAudio && !isVideo && (
                             <Box sx={{ p: 4, textAlign: 'center' }}>
                                 <Typography color="text.secondary" gutterBottom>
                                     Preview tidak tersedia untuk file ini

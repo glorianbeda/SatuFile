@@ -6,13 +6,9 @@ import (
 	"net/http"
 
 	"github.com/satufile/satufile/auth"
+
 	"github.com/satufile/satufile/users"
 )
-
-// Deps holds dependencies for API handlers
-type Deps struct {
-	UserRepo *users.Repository
-}
 
 // LoginRequest is the login request body
 type LoginRequest struct {

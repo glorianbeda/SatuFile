@@ -27,6 +27,7 @@ import {
     Person,
     CreateNewFolder,
     FolderOpen,
+    Share,
 } from '@mui/icons-material';
 import { SearchBar } from '../common/SearchBar';
 import { useTheme } from '../../contexts/ThemeProvider';
@@ -36,9 +37,10 @@ interface HeaderProps {
     onUploadClick?: () => void;
     onFolderUploadClick?: () => void;
     onNewFolderClick?: () => void;
+    onSharesClick?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onUploadClick, onFolderUploadClick, onNewFolderClick }) => {
+export const Header: React.FC<HeaderProps> = ({ onUploadClick, onFolderUploadClick, onNewFolderClick, onSharesClick }) => {
     const navigate = useNavigate();
     const muiTheme = useMuiTheme();
     const { mode, toggleTheme } = useTheme();
@@ -212,6 +214,18 @@ export const Header: React.FC<HeaderProps> = ({ onUploadClick, onFolderUploadCli
                             </MenuItem>
                         </Menu>
 
+                        {/* Shares - Hide on mobile */}
+                        {!isMobile && (
+                            <Tooltip title="Kelola Share">
+                                <IconButton
+                                    onClick={onSharesClick}
+                                    sx={{ color: 'text.secondary' }}
+                                >
+                                    <Share />
+                                </IconButton>
+                            </Tooltip>
+                        )}
+
                         {/* Notifications - Hide on mobile */}
                         {!isMobile && (
                             <Tooltip title="Notifications">
@@ -261,12 +275,15 @@ export const Header: React.FC<HeaderProps> = ({ onUploadClick, onFolderUploadCli
                                     <MenuItem onClick={handleClose}>
                                         <Notifications sx={{ mr: 1, fontSize: 20 }} /> Notifications
                                     </MenuItem>
+                                    <MenuItem onClick={() => { handleClose(); onSharesClick?.(); }}>
+                                        <Share sx={{ mr: 1, fontSize: 20 }} /> Kelola Share
+                                    </MenuItem>
                                     <MenuItem onClick={handleClose}>
                                         <Add sx={{ mr: 1, fontSize: 20 }} /> Create New
                                     </MenuItem>
                                 </>
                             )}
-                            <MenuItem onClick={() => { handleClose(); navigate('/profile'); }}>
+                            <MenuItem onClick={() => { handleClose(); navigate('/settings'); }}>
                                 <Person sx={{ mr: 1, fontSize: 20 }} /> Profile
                             </MenuItem>
                             <MenuItem onClick={() => { handleClose(); navigate('/settings'); }}>

@@ -2,9 +2,11 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/satufile/satufile/auth"
+	"github.com/satufile/satufile/users"
 )
 
 // UpdateProfileRequest is the request body for updating user profile
@@ -32,6 +34,11 @@ func UpdateProfilePut(deps *Deps) http.HandlerFunc {
 
 		// Update fields if provided
 		if req.Locale != nil {
+			// Validate locale code
+			if !users.IsValidLocale(*req.Locale) {
+				http.Error(w, fmt.Sprintf("Invalid locale. Supported languages: %v", users.SupportedLocales), http.StatusBadRequest)
+				return
+			}
 			user.Locale = *req.Locale
 		}
 		if req.ViewMode != nil {

@@ -10,11 +10,12 @@ import (
 
 	"github.com/satufile/satufile/routes"
 	"github.com/satufile/satufile/settings"
+	"github.com/satufile/satufile/storage"
 	"github.com/satufile/satufile/users"
 )
 
-// NewHandler creates the main HTTP handler with all routes
-func NewHandler(cfg *settings.Config, userRepo *users.Repository) http.Handler {
+// NewHandler creates a main HTTP handler with all routes
+func NewHandler(cfg *settings.Config, userRepo *users.Repository, storageBackend *storage.Storage) http.Handler {
 	r := mux.NewRouter()
 
 	// Global middleware
@@ -22,7 +23,7 @@ func NewHandler(cfg *settings.Config, userRepo *users.Repository) http.Handler {
 	r.Use(corsMiddleware)
 
 	// Register file-based routes
-	routes.RegisterRoutes(r, userRepo, cfg.Root)
+	routes.RegisterRoutes(r, userRepo, cfg.Root, storageBackend.Share)
 
 	// Static files (frontend) - SPA handler
 	r.PathPrefix("/").Handler(spaHandler("frontend/dist"))
@@ -31,14 +32,14 @@ func NewHandler(cfg *settings.Config, userRepo *users.Repository) http.Handler {
 }
 
 // NewHandlerWithAssets creates handler with embedded frontend assets
-func NewHandlerWithAssets(cfg *settings.Config, userRepo *users.Repository, assets fs.FS) http.Handler {
+func NewHandlerWithAssets(cfg *settings.Config, userRepo *users.Repository, storageBackend *storage.Storage, assets fs.FS) http.Handler {
 	r := mux.NewRouter()
 
 	r.Use(securityHeaders)
 	r.Use(corsMiddleware)
 
 	// Register file-based routes
-	routes.RegisterRoutes(r, userRepo, cfg.Root)
+	routes.RegisterRoutes(r, userRepo, cfg.Root, storageBackend.Share)
 
 	// Serve embedded frontend assets
 	r.PathPrefix("/").Handler(http.FileServer(http.FS(assets)))

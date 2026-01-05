@@ -5,6 +5,7 @@ import (
 
 	"github.com/satufile/satufile/auth"
 	"github.com/satufile/satufile/routes/api"
+	"github.com/satufile/satufile/share"
 	"github.com/satufile/satufile/users"
 )
 
@@ -19,9 +20,12 @@ import (
 //
 // Add new routes by creating a file in routes/ directory
 // with the pattern: {name}.{method}.go
-func RegisterRoutes(r *mux.Router, userRepo *users.Repository, root string) {
+func RegisterRoutes(r *mux.Router, userRepo *users.Repository, root string, shareStorage share.StorageBackend) {
 	// API dependencies
-	apiDeps := &api.Deps{UserRepo: userRepo}
+	apiDeps := &api.Deps{
+		UserRepo: userRepo,
+		Share:    shareStorage,
+	}
 
 	// ===== Public Routes =====
 	r.HandleFunc("/health", HealthGet()).Methods("GET")
@@ -32,7 +36,7 @@ func RegisterRoutes(r *mux.Router, userRepo *users.Repository, root string) {
 	// Public API routes
 	apiRouter.HandleFunc("/info", api.InfoGet(apiDeps)).Methods("GET")
 	apiRouter.HandleFunc("/login", api.LoginPost(apiDeps)).Methods("POST")
-	apiRouter.HandleFunc("/signup", api.SignupPost(apiDeps)).Methods("POST")
+	apiRouter.HandleFunc("/share/public", api.SharePublicGet(apiDeps, root)).Methods("GET") // Public share access
 
 	// ===== Protected Routes =====
 	protectedAPI := apiRouter.NewRoute().Subrouter()
@@ -55,4 +59,10 @@ func RegisterRoutes(r *mux.Router, userRepo *users.Repository, root string) {
 
 	// Storage usage
 	protectedAPI.HandleFunc("/storage", api.StorageGet(apiDeps, root)).Methods("GET")
+
+	// Share endpoints
+	protectedAPI.HandleFunc("/share", api.SharePost(apiDeps)).Methods("POST")
+	protectedAPI.HandleFunc("/share", api.SharePut(apiDeps)).Methods("PUT")
+	protectedAPI.HandleFunc("/share", api.ShareDelete(apiDeps)).Methods("DELETE")
+	protectedAPI.HandleFunc("/shares", api.SharesGet(apiDeps)).Methods("GET")
 }

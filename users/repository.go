@@ -113,6 +113,7 @@ func (r *Repository) CreateAdmin(username, password string) error {
 		Username:           username,
 		Password:           hashedPwd,
 		Scope:              "/",
+		Locale:             DefaultLocale,
 		MustChangePassword: true, // Force first-time password change
 		Perm: Permissions{
 			Admin:    true,
