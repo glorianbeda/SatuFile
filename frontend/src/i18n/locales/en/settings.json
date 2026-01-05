@@ -1,0 +1,27 @@
+{
+  "title": "Pengaturan",
+  "profile": "Profil",
+  "security": "Keamanan",
+  "shares": "Share",
+  "username": "Username",
+  "email": "Email",
+  "language": "Bahasa",
+  "languageSelectorHint": "Pilih bahasa preferensi Anda",
+  "changePassword": "Ubah Password",
+  "currentPassword": "Password Saat Ini",
+  "newPassword": "Password Baru",
+  "confirmPassword": "Konfirmasi Password",
+  "passwordChanged": "Password berhasil diubah",
+  "passwordChangeError": "Gagal mengubah password",
+  "profileUpdated": "Profil berhasil diperbarui",
+  "profileUpdateError": "Gagal memperbarui profil",
+  "files": "Files",
+  "hideDotfiles": "Sembunyikan file tersembunyi (.dotfiles)",
+  "singleClick": "Buka file dengan single click",
+  "manageShares": "Kelola Share",
+  "allShares": "Semua Share",
+  "searchShares": "Cari file atau token...",
+  "shareManagement": "Kelola Share",
+  "shareListDescription": "Kelola semua link share yang aktif"
+}
+

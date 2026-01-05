@@ -1,0 +1,19 @@
+{
+  "title": "Files",
+  "uploadFiles": "Upload Files",
+  "createFolder": "Create Folder",
+  "emptyDirectory": "This directory is empty",
+  "listView": "List View",
+  "gridView": "Grid View",
+  "fileMenu": "File Menu",
+  "folderMenu": "Folder Menu",
+  "uploadError": "Failed to upload file",
+  "createFolderError": "Failed to create folder",
+  "renameError": "Failed to rename",
+  "deleteError": "Failed to delete",
+  "shareError": "Failed to create share",
+  "createFolderSuccess": "Folder created successfully",
+  "renameSuccess": "Renamed successfully",
+  "deleteSuccess": "Deleted successfully",
+  "shareSuccess": "Share link created successfully"
+}

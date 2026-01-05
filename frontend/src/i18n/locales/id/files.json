@@ -1,0 +1,19 @@
+{
+  "title": "Files",
+  "uploadFiles": "Unggah Files",
+  "createFolder": "Buat Folder",
+  "emptyDirectory": "Direktori ini kosong",
+  "listView": "Tampilan List",
+  "gridView": "Tampilan Grid",
+  "fileMenu": "Menu File",
+  "folderMenu": "Menu Folder",
+  "uploadError": "Gagal mengunggah file",
+  "createFolderError": "Gagal membuat folder",
+  "renameError": "Gagal mengubah nama",
+  "deleteError": "Gagal menghapus",
+  "shareError": "Gagal membuat share",
+  "createFolderSuccess": "Folder berhasil dibuat",
+  "renameSuccess": "Berhasil diubah namanya",
+  "deleteSuccess": "Berhasil dihapus",
+  "shareSuccess": "Link share berhasil dibuat"
+}

@@ -1,0 +1,22 @@
+{
+  "title": "File Share",
+  "sharedBy": "File dibagikan oleh pengguna",
+  "fileName": "Nama File/Folder",
+  "shareToken": "Token Share",
+  "shareExpiration": "Kadaluarsa",
+  "publicShareNotice": "File ini dibagikan secara publik. Anda dapat mengunduhnya tanpa login.",
+  "downloadFile": "Unduh File",
+  "invalidShareLink": "Link share tidak valid atau telah kadaluarsa",
+  "expiredShareLink": "Link share telah kadaluarsa",
+  "manageShares": "Kelola Share",
+  "shareManagement": "Kelola Share",
+  "allShares": "Kelola semua link share yang aktif",
+  "refresh": "Refresh",
+  "searchPlaceholder": "Cari file atau token...",
+  "deleteShareConfirm": "Apakah Anda yakin ingin menghapus share untuk file/folder \"{{path}}\"? Link share tidak akan lagi dapat diakses.",
+  "shareDeleted": "Share berhasil dihapus",
+  "shareDeleteError": "Gagal menghapus share",
+  "shareCopied": "Link share berhasil disalin!",
+  "loadSharesError": "Gagal memuat daftar share",
+  "branding": "SatuFile - Cloud Drive Solution"
+}

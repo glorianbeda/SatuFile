@@ -1,0 +1,22 @@
+{
+  "title": "Shared File",
+  "sharedBy": "Shared by user",
+  "fileName": "File/Folder Name",
+  "shareToken": "Share Token",
+  "shareExpiration": "Expiration",
+  "publicShareNotice": "This file is shared publicly. You can download it without logging in.",
+  "downloadFile": "Download File",
+  "invalidShareLink": "Invalid or expired share link",
+  "expiredShareLink": "Share link has expired",
+  "manageShares": "Manage Shares",
+  "shareManagement": "Share Management",
+  "allShares": "All active share links",
+  "refresh": "Refresh",
+  "searchPlaceholder": "Search file or token...",
+  "deleteShareConfirm": "Are you sure you want to delete share for file/folder \"{{path}}\"? The share link will no longer be accessible.",
+  "shareDeleted": "Share deleted successfully",
+  "shareDeleteError": "Failed to delete share",
+  "shareCopied": "Share link copied successfully!",
+  "loadSharesError": "Failed to load share list",
+  "branding": "SatuFile - Cloud Drive Solution"
+}
