@@ -16,12 +16,15 @@ import {
   Close as CloseIcon,
   ContentCopy,
   AccessTime,
+  Folder as FolderIcon,
+  Description as FileIcon,
 } from "@mui/icons-material";
 
 interface ShareDialogProps {
   open: boolean;
   onClose: () => void;
   fileName: string;
+  fileType: "file" | "folder";
   shareUrl: string;
   onCopyLink: () => void;
   onCreateShare: (expiration: { expires: string; unit: string }) => void;
@@ -78,6 +81,7 @@ export const ShareDialog: React.FC<ShareDialogProps> = ({
   open,
   onClose,
   fileName,
+  fileType,
   shareUrl,
   onCopyLink,
   onCreateShare,
@@ -124,7 +128,9 @@ export const ShareDialog: React.FC<ShareDialogProps> = ({
         <Box display="flex" alignItems="center" justifyContent="space-between">
           <Box display="flex" alignItems="center" gap={1}>
             <AccessTime color="primary" />
-            <Typography variant="h6">Share File</Typography>
+            <Typography variant="h6">
+              {fileType === "folder" ? "Share Folder" : "Share File"}
+            </Typography>
           </Box>
           <IconButton onClick={handleClose} size="small">
             <CloseIcon />
@@ -135,8 +141,8 @@ export const ShareDialog: React.FC<ShareDialogProps> = ({
       <DialogContent sx={{ pt: 2 }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           {hasCreated
-            ? "File berhasil dibagikan!"
-            : `Share file: "${fileName}"`}
+            ? `${fileType === "folder" ? "Folder" : "File"} berhasil dibagikan!`
+            : `${fileType === "folder" ? "Share folder" : "Share file"}: "${fileName}"`}
         </Typography>
 
         {!hasCreated && (
@@ -162,13 +168,13 @@ export const ShareDialog: React.FC<ShareDialogProps> = ({
                   onClick={() => setSelectedExpiration(option)}
                   variant={
                     selectedExpiration.value === option.value &&
-                    selectedExpiration.unit === option.unit
+                      selectedExpiration.unit === option.unit
                       ? "filled"
                       : "outlined"
                   }
                   color={
                     selectedExpiration.value === option.value &&
-                    selectedExpiration.unit === option.unit
+                      selectedExpiration.unit === option.unit
                       ? "primary"
                       : "default"
                   }

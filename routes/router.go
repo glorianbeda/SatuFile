@@ -25,6 +25,7 @@ func RegisterRoutes(r *mux.Router, userRepo *users.Repository, root string, shar
 	apiDeps := &api.Deps{
 		UserRepo: userRepo,
 		Share:    shareStorage,
+		DataDir:  root,
 	}
 
 	// ===== Public Routes =====

@@ -9,4 +9,5 @@ import (
 type Deps struct {
 	UserRepo *users.Repository
 	Share    share.StorageBackend
+	DataDir  string
 }

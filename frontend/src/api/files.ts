@@ -8,6 +8,7 @@ export interface FileInfo {
   isDir: boolean;
   type?: string;
   extension?: string;
+  isShared?: boolean;
 }
 
 export interface ShareLink {
@@ -113,6 +114,32 @@ export const filesApi = {
   // Delete share link
   deleteShare: (token: string): Promise<void> => {
     return api.delete(`/share?token=${token}`);
+  },
+
+  // Get list of shares
+  getShares: (): Promise<ShareLink[]> => {
+    return api.get("/shares");
+  },
+
+  // Get shared folder contents
+  getSharedFolder: (token: string, subpath?: string): Promise<{
+    token: string;
+    path: string;
+    name: string;
+    type: string;
+    expires_at: string;
+    expires: string;
+    isDir: boolean;
+    subpath?: string;
+    items: FileInfo[];
+    numDirs: number;
+    numFiles: number;
+  }> => {
+    let url = `/share/public?token=${token}`;
+    if (subpath) {
+      url += `&subpath=${encodeURIComponent(subpath)}`;
+    }
+    return api.get(url);
   },
 };
 

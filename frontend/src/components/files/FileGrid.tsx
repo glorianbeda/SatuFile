@@ -9,6 +9,7 @@ import {
     PictureAsPdf,
     Article,
     MoreVert,
+    FolderShared,
 } from '@mui/icons-material';
 import { filesApi } from '../../api';
 import { ThumbnailImage } from './ThumbnailImage';
@@ -21,6 +22,7 @@ export interface FileItem {
     isDir: boolean;
     type?: string;
     extension?: string;
+    isShared?: boolean;
 }
 
 interface FileGridProps {
@@ -193,6 +195,19 @@ export const FileGrid: React.FC<FileGridProps> = ({
                             <Typography variant="caption" color="text.secondary">
                                 {formatSize(file.size)}
                             </Typography>
+                        )}
+
+                        {/* Shared Indicator */}
+                        {file.isShared && (
+                            <FolderShared
+                                sx={{
+                                    position: 'absolute',
+                                    top: 4,
+                                    right: 4,
+                                    fontSize: 14,
+                                    color: 'primary.main',
+                                }}
+                            />
                         )}
                     </Box>
                 );

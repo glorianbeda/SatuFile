@@ -14,6 +14,7 @@ import {
   Delete,
   Share,
   Visibility,
+  FolderShared,
 } from "@mui/icons-material";
 import { FileIcon } from "./FileIcon";
 
@@ -25,6 +26,7 @@ export interface FileData {
   size?: string;
   owner?: string;
   modifiedAt?: string;
+  isShared?: boolean;
 }
 
 interface FileRowProps {
@@ -165,6 +167,17 @@ export const FileRow: React.FC<FileRowProps> = ({
         {file.modifiedAt || "-"}
       </Typography>
 
+      {/* Shared Indicator */}
+      {file.isShared && (
+        <FolderShared
+          sx={{
+            fontSize: 16,
+            color: selected ? "white" : "primary.main",
+            ml: 0.5,
+          }}
+        />
+      )}
+
       {/* Actions */}
       <IconButton
         size="small"
@@ -214,7 +227,7 @@ export const FileRow: React.FC<FileRowProps> = ({
             </MenuItem>
           ),
         ]}
-        {onShare && file.type === "file" && (
+        {onShare && (
           <MenuItem
             onClick={(e) => {
               e.stopPropagation();

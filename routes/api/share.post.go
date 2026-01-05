@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/satufile/satufile/share"
 )
@@ -22,6 +24,32 @@ func SharePost(deps *Deps) http.HandlerFunc {
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Invalid request", http.StatusBadRequest)
 			return
+		}
+
+		// Validate type
+		if req.Type != "file" && req.Type != "folder" {
+			http.Error(w, "Invalid type, must be 'file' or 'folder'", http.StatusBadRequest)
+			return
+		}
+
+		// Validate path exists
+		fullPath := filepath.Join(deps.DataDir, req.Path)
+		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+			http.Error(w, "File or folder not found", http.StatusNotFound)
+			return
+		}
+
+		// If folder, validate it's actually a directory
+		if req.Type == "folder" {
+			info, err := os.Stat(fullPath)
+			if err != nil {
+				http.Error(w, "Failed to access folder", http.StatusInternalServerError)
+				return
+			}
+			if !info.IsDir() {
+				http.Error(w, "Path is not a folder", http.StatusBadRequest)
+				return
+			}
 		}
 
 		// Parse expires duration
