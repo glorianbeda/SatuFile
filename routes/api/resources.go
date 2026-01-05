@@ -48,6 +48,26 @@ func ResourceGet(deps *Deps, root string) http.HandlerFunc {
 				return
 			}
 
+			// Check share status for each item
+			links, _ := deps.Share.ListLinks()
+			shareMap := make(map[string]bool)
+			for _, link := range links {
+				shareMap[link.Path] = true
+				// For folder shares, mark all items in the folder as shared
+				if link.Type == "folder" {
+					for _, item := range listing.Items {
+						if strings.HasPrefix(item.Path, link.Path) {
+							shareMap[item.Path] = true
+						}
+					}
+				}
+			}
+
+			// Update isShared for each item
+			for _, item := range listing.Items {
+				item.IsShared = shareMap[item.Path]
+			}
+
 			// Apply sorting
 			sortBy := r.URL.Query().Get("sort")
 			sortAsc := r.URL.Query().Get("order") != "desc"
@@ -65,6 +85,15 @@ func ResourceGet(deps *Deps, root string) http.HandlerFunc {
 				"numFiles": listing.NumFiles,
 			})
 			return
+		}
+
+		// Check if single file is shared
+		links, _ := deps.Share.ListLinks()
+		for _, link := range links {
+			if link.Path == path {
+				info.IsShared = true
+				break
+			}
 		}
 
 		// Single file info

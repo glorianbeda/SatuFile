@@ -19,6 +19,7 @@ type FileInfo struct {
 	Mode      fs.FileMode `json:"mode"`
 	IsDir     bool        `json:"isDir"`
 	Type      string      `json:"type"`
+	IsShared  bool        `json:"isShared"`
 }
 
 // Listing contains directory contents

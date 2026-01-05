@@ -134,6 +134,7 @@ export const HomePage: React.FC = () => {
       size: formatSize(item.size),
       modifiedAt: new Date(item.modified).toLocaleDateString(),
       owner: "Me",
+      isShared: item.isShared || false,
     })) || [];
 
   // Convert for FileGrid
@@ -146,6 +147,7 @@ export const HomePage: React.FC = () => {
       isDir: item.isDir,
       type: item.type,
       extension: item.extension,
+      isShared: item.isShared || false,
     })) || [];
 
   // Category type detection helper
@@ -913,6 +915,7 @@ export const HomePage: React.FC = () => {
         onCopyLink={handleCopyLink}
         onCreateShare={handleCreateShare}
         isCreating={isCreatingShare}
+        fileType={(shareFile?.type === "folder" ? "folder" : "file") as "file" | "folder"}
       />
 
       {/* Delete Confirm Dialog */}

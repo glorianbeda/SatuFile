@@ -266,16 +266,32 @@ const PublicSharePage: React.FC = () => {
             <Typography variant="body1">{formatDate(shareInfo?.expires_at || null)}</Typography>
           </Box>
 
-          {/* Folder contents */}
-          {shareInfo?.isDir && shareInfo?.items && shareInfo.items.length > 0 && (
+          {/* File preview for single file shares */}
+          {!shareInfo?.isDir && (
+            <Box sx={{ mb: 4, textAlign: 'center' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+                <InsertDriveFile sx={{ fontSize: 80, color: 'primary.main' }} />
+              </Box>
+              {shareInfo?.size && (
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Ukuran: {formatSize(shareInfo.size)}
+                </Typography>
+              )}
+            </Box>
+          )}
+
+          {/* Folder contents - File Explorer View */}
+          {shareInfo?.isDir && (
             <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Isi Folder ({shareInfo.numDirs} folder, {shareInfo.numFiles} file)
-              </Typography>
-              <Paper variant="outlined" sx={{ maxHeight: 300, overflow: 'auto' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Isi Folder ({shareInfo.numDirs} folder, {shareInfo.numFiles} file)
+                </Typography>
+              </Box>
+              <Paper variant="outlined" sx={{ maxHeight: 500, overflow: 'auto' }}>
                 <List dense>
                   {currentSubpath && (
-                    <ListItem disablePadding>
+                    <ListItem disablePadding sx={{ borderBottom: 1, borderColor: 'divider' }}>
                       <ListItemButton onClick={() => {
                         const parts = currentSubpath.split('/').filter(Boolean);
                         parts.pop();
@@ -284,39 +300,58 @@ const PublicSharePage: React.FC = () => {
                         <ListItemIcon>
                           <ArrowBack />
                         </ListItemIcon>
-                        <ListItemText primary=".." secondary="Kembali" />
+                        <ListItemText primary=".." secondary="Kembali ke folder sebelumnya" />
                       </ListItemButton>
                     </ListItem>
                   )}
-                  {shareInfo.items.map((item) => (
-                    <ListItem key={item.path} disablePadding>
-                      <ListItemButton
-                        onClick={() => {
-                          if (item.isDir) {
-                            handleNavigateFolder(item.path);
-                          } else {
-                            // Build subpath for this file
-                            const basePath = shareInfo?.path || '';
-                            const relativePath = item.path.startsWith(basePath)
-                              ? item.path.substring(basePath.length).replace(/^\//, '')
-                              : item.path;
-                            handleDownload(relativePath);
-                          }
-                        }}
-                      >
-                        <ListItemIcon>
-                          {item.isDir ? <Folder color="primary" /> : <InsertDriveFile />}
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={item.name}
-                          secondary={item.isDir ? 'Folder' : formatSize(item.size)}
-                        />
-                        {!item.isDir && (
-                          <Download fontSize="small" color="action" />
-                        )}
-                      </ListItemButton>
+                  {shareInfo.items && shareInfo.items.length > 0 ? (
+                    shareInfo.items.map((item) => (
+                      <ListItem key={item.path} disablePadding sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                        <ListItemButton
+                          onClick={() => {
+                            if (item.isDir) {
+                              handleNavigateFolder(item.path);
+                            } else {
+                              // Build subpath for this file
+                              const basePath = shareInfo?.path || '';
+                              const relativePath = item.path.startsWith(basePath)
+                                ? item.path.substring(basePath.length).replace(/^\//, '')
+                                : item.path;
+                              handleDownload(relativePath);
+                            }
+                          }}
+                          sx={{ py: 1.5 }}
+                        >
+                          <ListItemIcon>
+                            {item.isDir ? (
+                              <Folder color="primary" sx={{ fontSize: 32 }} />
+                            ) : (
+                              <InsertDriveFile sx={{ fontSize: 32, color: 'text.secondary' }} />
+                            )}
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={
+                              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                {item.name}
+                              </Typography>
+                            }
+                            secondary={
+                              <Typography variant="caption" color="text.secondary">
+                                {item.isDir ? 'Folder' : formatSize(item.size)}
+                              </Typography>
+                            }
+                          />
+                          {!item.isDir && (
+                            <Download fontSize="small" color="action" />
+                          )}
+                        </ListItemButton>
+                      </ListItem>
+                    ))
+                  ) : (
+                    <ListItem>
+                      <ListItemText primary="Folder ini kosong" sx={{ textAlign: 'center', color: 'text.secondary' }} />
                     </ListItem>
-                  ))}
+                  )}
                 </List>
               </Paper>
             </Box>
@@ -336,6 +371,7 @@ const PublicSharePage: React.FC = () => {
               fullWidth
               startIcon={<Download />}
               onClick={() => handleDownload()}
+              sx={{ py: 1.5 }}
             >
               Unduh File
             </Button>
