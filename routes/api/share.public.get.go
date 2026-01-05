@@ -11,7 +11,7 @@ import (
 	"github.com/satufile/satufile/files"
 )
 
-// SharePublicGetResponse is the JSON response for share info
+// SharePublicGetResponse is JSON response for share info
 type SharePublicGetResponse struct {
 	Token     string `json:"token"`
 	Path      string `json:"path"`
