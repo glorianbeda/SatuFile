@@ -1,74 +1,74 @@
 ## 1. Backend Implementation
 
-- [ ] 1.1 Update `share/share.go` to support folder sharing
-  - [ ] Add `IsFolder` field to `Link` struct (or use existing `Type` field)
-  - [ ] Ensure `Path` field can store folder paths
-  - [ ] Add validation for folder paths
+- [x] 1.1 Update `share/share.go` to support folder sharing
+  - [x] Add `IsFolder` field to `Link` struct (or use existing `Type` field)
+  - [x] Ensure `Path` field can store folder paths
+  - [x] Add validation for folder paths
 
-- [ ] 1.2 Update `routes/api/share.post.go` to handle folder sharing
-  - [ ] Accept folder type in request
-  - [ ] Create share links for folders
-  - [ ] Validate folder exists before creating share
+- [x] 1.2 Update `routes/api/share.post.go` to handle folder sharing
+  - [x] Accept folder type in request
+  - [x] Create share links for folders
+  - [x] Validate folder exists before creating share
 
-- [ ] 1.3 Update `routes/api/share.public.get.go` to support folder browsing
-  - [ ] Add logic to handle folder paths
-  - [ ] Return list of files and folders for shared folder
-  - [ ] Support navigation to subfolders
-  - [ ] Implement read-only access (no modification endpoints)
+- [x] 1.3 Update `routes/api/share.public.get.go` to support folder browsing
+  - [x] Add logic to handle folder paths
+  - [x] Return list of files and folders for shared folder
+  - [x] Support navigation to subfolders
+  - [x] Implement read-only access (no modification endpoints)
 
-- [ ] 1.4 Update `routes/api/shares.get.go` to include folder shares
-  - [ ] Return list of all shares including folders
-  - [ ] Include share type (file/folder) in response
+- [x] 1.4 Update `routes/api/shares.get.go` to include folder shares
+  - [x] Return list of all shares including folders
+  - [x] Include share type (file/folder) in response
 
-- [ ] 1.5 Update `routes/api/share.delete.go` to handle folder shares
-  - [ ] Delete folder share links
-  - [ ] Clean up database records
+- [x] 1.5 Update `routes/api/share.delete.go` to handle folder shares
+  - [x] Delete folder share links
+  - [x] Clean up database records
 
 ## 2. Frontend Components
 
-- [ ] 2.1 Update `frontend/src/components/files/ShareDialog.tsx`
-  - [ ] Update dialog title to handle both files and folders
-  - [ ] Show appropriate icon based on type
-  - [ ] Pass folder type to API when creating share
+- [x] 2.1 Update `frontend/src/components/files/ShareDialog.tsx`
+  - [x] Update dialog title to handle both files and folders
+  - [x] Show appropriate icon based on type
+  - [x] Pass folder type to API when creating share
 
-- [ ] 2.2 Update `frontend/src/components/files/FileRow.tsx`
-  - [ ] Add `isShared` prop to FileData interface
-  - [ ] Add FolderShared icon display after modified date
-  - [ ] Show FolderShared icon only when `isShared` is true
-  - [ ] Add Share option to folder context menu
+- [x] 2.2 Update `frontend/src/components/files/FileRow.tsx`
+  - [x] Add `isShared` prop to FileData interface
+  - [x] Add FolderShared icon display after modified date
+  - [x] Show FolderShared icon only when `isShared` is true
+  - [x] Add Share option to folder context menu
 
-- [ ] 2.3 Update `frontend/src/components/files/FileGrid.tsx`
-  - [ ] Add `isShared` prop to FileData interface
-  - [ ] Add FolderShared icon display in grid view
-  - [ ] Show FolderShared icon only when `isShared` is true
+- [x] 2.3 Update `frontend/src/components/files/FileGrid.tsx`
+  - [x] Add `isShared` prop to FileData interface
+  - [x] Add FolderShared icon display in grid view
+  - [x] Show FolderShared icon only when `isShared` is true
 
-- [ ] 2.4 Update `frontend/src/components/files/FileList.tsx`
-  - [ ] Pass `isShared` prop to FileRow components
-  - [ ] Handle share status from API response
+- [x] 2.4 Update `frontend/src/components/files/FileList.tsx`
+  - [x] Pass `isShared` prop to FileRow components
+  - [x] Handle share status from API response
 
-- [ ] 2.5 Update `frontend/src/api/files.ts`
-  - [ ] Add `isShared` field to file/folder response types
-  - [ ] Update API calls to include share status
+- [x] 2.5 Update `frontend/src/api/files.ts`
+  - [x] Add `isShared` field to file/folder response types
+  - [x] Update API calls to include share status
 
 ## 3. Public Share Page
 
-- [ ] 3.1 Update `frontend/src/features/shares/PublicSharePage.tsx`
-  - [ ] Add file browser UI similar to main file management view
-  - [ ] Display files and folders in list or grid view
-  - [ ] Add breadcrumb navigation for folder hierarchy
-  - [ ] Implement read-only access (no upload, create, edit, delete)
-  - [ ] Add download functionality for files
-  - [ ] Add preview functionality for previewable files
-  - [ ] Handle expired/invalid share tokens with error messages
+- [x] 3.1 Update `frontend/src/features/shares/PublicSharePage.tsx`
+  - [x] Add file browser UI similar to main file management view
+  - [x] Display files and folders in list or grid view
+  - [x] Add breadcrumb navigation for folder hierarchy
+  - [x] Implement read-only access (no upload, create, edit, delete)
+  - [x] Add download functionality for files
+  - [x] Add preview functionality for previewable files
+  - [x] Handle expired/invalid share tokens with error messages
 
-- [ ] 3.2 Update `frontend/src/api/files.ts` (or create new share API)
-  - [ ] Add API function to fetch shared folder contents
-  - [ ] Add API function to fetch shared file info
-  - [ ] Add API function to download shared file
+- [x] 3.2 Update `frontend/src/api/files.ts` (or create new share API)
+  - [x] Add API function to fetch shared folder contents
+  - [x] Add API function to fetch shared file info
+  - [x] Add API function to download shared file
 
-- [ ] 3.3 Update `frontend/src/routes.tsx`
-  - [ ] Add route for public share page
-  - [ ] Ensure route doesn't require authentication
+- [x] 3.3 Update `frontend/src/routes.tsx`
+  - [x] Add route for public share page
+  - [x] Ensure route doesn't require authentication
 
 ## 4. Integration and Testing
 
