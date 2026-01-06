@@ -16,8 +16,6 @@ import {
   Close as CloseIcon,
   ContentCopy,
   AccessTime,
-  Folder as FolderIcon,
-  Description as FileIcon,
 } from "@mui/icons-material";
 
 interface ShareDialogProps {
