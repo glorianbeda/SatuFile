@@ -12,7 +12,8 @@ RUN npm ci
 # Copy frontend source
 COPY frontend/ ./
 
-# Build frontend
+# Build frontend with increased memory limit
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 RUN npm run build
 
 # Build stage - Backend
