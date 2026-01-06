@@ -75,6 +75,7 @@ func initConfig() {
 		viper.SetConfigType("yaml")
 	}
 
+	viper.SetEnvPrefix("SATUFILE")
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err == nil {
