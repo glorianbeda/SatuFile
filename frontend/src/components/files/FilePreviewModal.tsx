@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { Close, Download, ZoomIn, ZoomOut } from '@mui/icons-material';
 import { filesApi } from '../../api';
+import { PdfViewer } from './PdfViewer';
 
 interface FilePreviewModalProps {
     open: boolean;
@@ -194,15 +195,12 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
                         )}
 
                         {isPdf && (
-                            <Box
-                                component="iframe"
-                                src={mediaSrc}
-                                sx={{
-                                    width: '100%',
-                                    height: '80vh',
-                                    border: 'none',
-                                }}
-                            />
+                            <Box sx={{ width: '100%', height: '80vh' }}>
+                                <PdfViewer
+                                    url={mediaSrc}
+                                    onError={() => setError(true)}
+                                />
+                            </Box>
                         )}
 
                         {isAudio && (
