@@ -1,10 +1,13 @@
 package api
 
 import (
+	"archive/zip"
 	"encoding/json"
+	"fmt"
 	"io"
 	"mime"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -127,8 +130,67 @@ func SharePublicGet(deps *Deps, root string) http.HandlerFunc {
 
 		// Handle download based on file type
 		if fileInfo.IsDir {
-			// For directories, we could zip them, but for now just error
-			http.Error(w, "Cannot download directory directly", http.StatusBadRequest)
+			// Stream folder as ZIP
+			zipName := fileInfo.Name + ".zip"
+			w.Header().Set("Content-Type", "application/zip")
+			w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", zipName))
+
+			zw := zip.NewWriter(w)
+			defer zw.Close()
+
+			baseDir := filepath.Join(root, targetPath)
+			err := filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+
+				// Skip the root folder itself
+				if path == baseDir {
+					return nil
+				}
+
+				// Create header
+				header, err := zip.FileInfoHeader(info)
+				if err != nil {
+					return err
+				}
+
+				// Set relative path
+				relPath, err := filepath.Rel(baseDir, path)
+				if err != nil {
+					return err
+				}
+				header.Name = relPath
+
+				if info.IsDir() {
+					header.Name += "/"
+				} else {
+					header.Method = zip.Deflate
+				}
+
+				writer, err := zw.CreateHeader(header)
+				if err != nil {
+					return err
+				}
+
+				if info.IsDir() {
+					return nil
+				}
+
+				file, err := os.Open(path)
+				if err != nil {
+					return err
+				}
+				defer file.Close()
+
+				_, err = io.Copy(writer, file)
+				return err
+			})
+
+			if err != nil {
+				// Log error? We can't write to response as we've already started streaming
+				return
+			}
 			return
 		}
 

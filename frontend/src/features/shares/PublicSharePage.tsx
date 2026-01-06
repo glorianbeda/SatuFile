@@ -377,6 +377,19 @@ const PublicSharePage: React.FC = () => {
             </Button>
           )}
 
+          {shareInfo?.isDir && (
+            <Button
+              variant="contained"
+              size="large"
+              fullWidth
+              startIcon={<Download />}
+              onClick={() => handleDownload()}
+              sx={{ py: 1.5 }}
+            >
+              Unduh Semua O(ZIP)
+            </Button>
+          )}
+
           <Divider sx={{ my: 3 }} />
 
           <Box sx={{ textAlign: 'center' }}>

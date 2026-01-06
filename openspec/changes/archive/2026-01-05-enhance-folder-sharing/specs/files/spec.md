@@ -75,8 +75,6 @@ The system SHALL provide a UI option to share folders.
 
 ---
 
-## MODIFIED Requirements
-
 ### Requirement: Share File
 
 The system SHALL allow users to share files with configurable expiration times.

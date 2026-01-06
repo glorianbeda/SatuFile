@@ -50,22 +50,43 @@ func ResourceGet(deps *Deps, root string) http.HandlerFunc {
 
 			// Check share status for each item
 			links, _ := deps.Share.ListLinks()
+
+			// Create a map of shared paths for O(1) lookup
+			// and also check for folder shares that might contain current items
 			shareMap := make(map[string]bool)
+			folderShares := []string{}
+
 			for _, link := range links {
-				shareMap[link.Path] = true
-				// For folder shares, mark all items in the folder as shared
+				linkPath := filepath.Clean(link.Path)
+				shareMap[linkPath] = true
+
 				if link.Type == "folder" {
-					for _, item := range listing.Items {
-						if strings.HasPrefix(item.Path, link.Path) {
-							shareMap[item.Path] = true
-						}
-					}
+					folderShares = append(folderShares, linkPath)
 				}
 			}
 
 			// Update isShared for each item
 			for _, item := range listing.Items {
-				item.IsShared = shareMap[item.Path]
+				itemPath := filepath.Clean(item.Path)
+
+				// 1. Direct match
+				if shareMap[itemPath] {
+					item.IsShared = true
+					continue
+				}
+
+				// 2. Parent folder match
+				// Check if any folder share contains this item
+				for _, sharePath := range folderShares {
+					// Check if itemPath is inside sharePath
+					// We use string prefix with trailing slash to ensure it's a directory match
+					// e.g. /Downloads/TestFile should be matched by /Downloads
+					// but /DownloadsTest should NOT be matched by /Downloads
+					if strings.HasPrefix(itemPath, sharePath+string(os.PathSeparator)) || itemPath == sharePath {
+						item.IsShared = true
+						break
+					}
+				}
 			}
 
 			// Apply sorting
@@ -89,8 +110,9 @@ func ResourceGet(deps *Deps, root string) http.HandlerFunc {
 
 		// Check if single file is shared
 		links, _ := deps.Share.ListLinks()
+		cleanPath := filepath.Clean(path)
 		for _, link := range links {
-			if link.Path == path {
+			if filepath.Clean(link.Path) == cleanPath {
 				info.IsShared = true
 				break
 			}
