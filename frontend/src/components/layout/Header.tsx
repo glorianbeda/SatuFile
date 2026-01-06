@@ -92,13 +92,17 @@ export const Header: React.FC<HeaderProps> = ({ onUploadClick, onFolderUploadCli
 
     return (
         <AppBar
-            position="sticky"
+            position="fixed"
             elevation={0}
             sx={{
                 bgcolor: 'background.paper',
                 borderBottom: '1px solid',
                 borderColor: 'divider',
                 width: '100%',
+                top: 0,
+                zIndex: 1100,
+                backdropFilter: 'blur(10px)',
+                backgroundColor: mode === 'dark' ? 'rgba(18, 18, 18, 0.9)' : 'rgba(255, 255, 255, 0.9)',
             }}
         >
             <Toolbar
