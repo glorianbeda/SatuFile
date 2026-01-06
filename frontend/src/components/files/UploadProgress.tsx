@@ -19,9 +19,11 @@ import {
     InsertDriveFile,
     Speed,
     Schedule,
+    Pause,
+    PlayArrow,
 } from '@mui/icons-material';
 
-export type UploadStatus = 'pending' | 'uploading' | 'completed' | 'error';
+export type UploadStatus = 'pending' | 'uploading' | 'paused' | 'completed' | 'error';
 
 export interface UploadItem {
     id: string;
@@ -39,6 +41,8 @@ interface UploadProgressProps {
     uploads: UploadItem[];
     onClose: () => void;
     onCancel?: (id: string) => void;
+    onPause?: (id: string) => void;
+    onResume?: (id: string) => void;
 }
 
 const formatFileSize = (bytes: number): string => {
@@ -78,6 +82,8 @@ const getStatusIcon = (status: UploadStatus) => {
 export const UploadProgress: React.FC<UploadProgressProps> = ({
     uploads,
     onClose,
+    onPause,
+    onResume,
 }) => {
     const [expanded, setExpanded] = useState(true);
     const theme = useTheme();
@@ -318,6 +324,40 @@ export const UploadProgress: React.FC<UploadProgressProps> = ({
                                         </Typography>
                                     )}
                                 </Box>
+
+                                {/* Pause/Resume buttons */}
+                                {upload.status === 'uploading' && onPause && (
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => onPause(upload.id)}
+                                        title="Pause"
+                                        sx={{ ml: 1 }}
+                                    >
+                                        <Pause fontSize="small" />
+                                    </IconButton>
+                                )}
+                                {upload.status === 'paused' && onResume && (
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => onResume(upload.id)}
+                                        title="Resume"
+                                        color="primary"
+                                        sx={{ ml: 1 }}
+                                    >
+                                        <PlayArrow fontSize="small" />
+                                    </IconButton>
+                                )}
+                                {upload.status === 'error' && onResume && (
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => onResume(upload.id)}
+                                        title="Coba Lagi"
+                                        color="error"
+                                        sx={{ ml: 1 }}
+                                    >
+                                        <PlayArrow fontSize="small" />
+                                    </IconButton>
+                                )}
                             </Box>
                         ))}
                     </Box>

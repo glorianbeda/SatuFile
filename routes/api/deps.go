@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/satufile/satufile/share"
+	"github.com/satufile/satufile/uploads"
 	"github.com/satufile/satufile/users"
 )
 
@@ -9,5 +10,6 @@ import (
 type Deps struct {
 	UserRepo *users.Repository
 	Share    share.StorageBackend
+	Uploads  uploads.StorageBackend
 	DataDir  string
 }

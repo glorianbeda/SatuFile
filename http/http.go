@@ -23,7 +23,7 @@ func NewHandler(cfg *settings.Config, userRepo *users.Repository, storageBackend
 	r.Use(corsMiddleware)
 
 	// Register file-based routes
-	routes.RegisterRoutes(r, userRepo, cfg.Root, storageBackend.Share)
+	routes.RegisterRoutes(r, userRepo, cfg.Root, storageBackend.Share, storageBackend.Uploads)
 
 	// Static files (frontend) - SPA handler
 	r.PathPrefix("/").Handler(spaHandler("frontend/dist"))
@@ -39,7 +39,7 @@ func NewHandlerWithAssets(cfg *settings.Config, userRepo *users.Repository, stor
 	r.Use(corsMiddleware)
 
 	// Register file-based routes
-	routes.RegisterRoutes(r, userRepo, cfg.Root, storageBackend.Share)
+	routes.RegisterRoutes(r, userRepo, cfg.Root, storageBackend.Share, storageBackend.Uploads)
 
 	// Serve embedded frontend assets
 	r.PathPrefix("/").Handler(http.FileServer(http.FS(assets)))

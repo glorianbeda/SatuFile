@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Box, Typography, CircularProgress, alpha } from "@mui/material";
 import { CloudUpload } from "@mui/icons-material";
@@ -75,6 +75,8 @@ export const HomePage: React.FC = () => {
   // Upload progress state
   const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [isFolderUpload, setIsFolderUpload] = useState(false);
+  const [uploadControllers, setUploadControllers] = useState<Map<string, XMLHttpRequest>>(new Map());
+  const uploadSessions = useRef<Map<string, { sessionId: string; currentChunk: number; totalChunks: number; abortController: AbortController; startTime: number }>>(new Map());
 
   // Shares panel state
   const [sharesOpen, setSharesOpen] = useState(false);
@@ -299,6 +301,9 @@ export const HomePage: React.FC = () => {
   const isAtRoot = currentPath === "/";
 
   const handleUpload = async (uploadFiles: File[]) => {
+    const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
+    const RESUMABLE_THRESHOLD = 10 * 1024 * 1024; // 10MB - files larger than this use resumable upload
+
     // Create upload items
     const newUploads: UploadItem[] = uploadFiles.map((file, idx) => ({
       id: `upload-${Date.now()}-${idx}`,
@@ -309,7 +314,7 @@ export const HomePage: React.FC = () => {
 
     setUploads((prev) => [...prev, ...newUploads]);
 
-    // Upload each file with progress tracking
+    // Upload each file
     for (const upload of newUploads) {
       const path =
         currentPath === "/"
@@ -324,30 +329,49 @@ export const HomePage: React.FC = () => {
       );
 
       try {
-        await uploadWithProgress(path, upload.file, (data) => {
+        // Use resumable upload for large files
+        if (upload.file.size > RESUMABLE_THRESHOLD) {
+          const completed = await uploadResumable(upload.id, upload.file, path, CHUNK_SIZE);
+          if (!completed) {
+            // Upload was paused/aborted, do not mark as completed
+            continue;
+          }
+
+          // Mark as completed only if fully uploaded
           setUploads((prev) =>
             prev.map((u) =>
               u.id === upload.id
-                ? {
-                  ...u,
-                  progress: data.progress,
-                  loaded: data.loaded,
-                  speed: data.speed,
-                  eta: data.eta,
-                }
+                ? { ...u, status: "completed" as const, progress: 100 }
                 : u,
             ),
           );
-        });
+        } else {
+          // Use regular upload for small files
+          await uploadWithProgress(path, upload.file, (data) => {
+            setUploads((prev) =>
+              prev.map((u) =>
+                u.id === upload.id
+                  ? {
+                    ...u,
+                    progress: data.progress,
+                    loaded: data.loaded,
+                    speed: data.speed,
+                    eta: data.eta,
+                  }
+                  : u,
+              ),
+            );
+          });
 
-        // Mark as completed
-        setUploads((prev) =>
-          prev.map((u) =>
-            u.id === upload.id
-              ? { ...u, status: "completed" as const, progress: 100 }
-              : u,
-          ),
-        );
+          // Mark as completed
+          setUploads((prev) =>
+            prev.map((u) =>
+              u.id === upload.id
+                ? { ...u, status: "completed" as const, progress: 100 }
+                : u,
+            ),
+          );
+        }
       } catch (err: any) {
         // Mark as error
         setUploads((prev) =>
@@ -400,6 +424,14 @@ export const HomePage: React.FC = () => {
       let lastLoaded = 0;
       let lastTime = startTime;
 
+
+      // Store XHR for pause/resume control
+      setUploadControllers(prev => {
+        const newMap = new Map(prev);
+        newMap.set(path, xhr);
+        return newMap;
+      });
+
       // Real progress tracking from XHR upload events
       xhr.upload.addEventListener("progress", (e) => {
         if (e.lengthComputable) {
@@ -445,7 +477,292 @@ export const HomePage: React.FC = () => {
     });
   };
 
+  // Resumable upload with chunking
+  const uploadResumable = async (
+    uploadId: string,
+    file: File,
+    path: string,
+    chunkSize: number,
+  ): Promise<boolean> => {
+    const totalChunks = Math.ceil(file.size / chunkSize);
+    const token = localStorage.getItem("auth-token");
+
+    // Create upload session
+    const sessionResponse = await fetch("/api/uploads", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify({
+        filename: file.name,
+        path,
+        size: file.size,
+      }),
+    });
+
+    if (!sessionResponse.ok) {
+      throw new Error("Failed to create upload session");
+    }
+
+    const session = await sessionResponse.json();
+    const abortController = new AbortController();
+    const startTime = Date.now();
+
+    // Store session info in ref
+    uploadSessions.current.set(uploadId, {
+      sessionId: session.id,
+      currentChunk: 0,
+      totalChunks,
+      abortController,
+      startTime,
+    });
+
+    // Upload chunks
+    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+      const sessionInfo = uploadSessions.current.get(uploadId);
+      // Check if aborted
+      if (!sessionInfo || abortController.signal.aborted) {
+        return false;
+      }
+
+      const start = chunkIndex * chunkSize;
+      const end = Math.min(start + chunkSize, file.size);
+      const chunk = file.slice(start, end);
+
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          const chunkResponse = await fetch(
+            `/api/uploads/${session.id}?chunk=${chunkIndex}`,
+            {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/octet-stream",
+                ...(token && { Authorization: `Bearer ${token}` }),
+              },
+              body: chunk,
+              signal: abortController.signal,
+            },
+          );
+
+          if (!chunkResponse.ok) {
+            // If 5xx error, retry. If 4xx (except 429), throw.
+            if (chunkResponse.status >= 500 || chunkResponse.status === 429) {
+              throw new Error(`Server error: ${chunkResponse.status}`);
+            }
+            throw new Error(`Failed to upload chunk ${chunkIndex}: ${chunkResponse.statusText}`);
+          }
+
+          // Success - break retry loop
+          break;
+        } catch (error: any) {
+          if (error.name === 'AbortError') {
+            return false;
+          }
+
+          retries--;
+          console.warn(`Chunk ${chunkIndex} failed, retries left: ${retries}`, error);
+
+          if (retries === 0) {
+            throw error;
+          }
+
+          // Wait before retry (1s, 2s, 4s)
+          const waitTime = (3 - retries) * 1000;
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      }
+
+      // Calculate speed and ETA
+      const elapsed = (Date.now() - startTime) / 1000;
+      const speed = end / elapsed;
+      const remaining = file.size - end;
+      const eta = remaining / speed;
+
+      // Update progress
+      const progress = ((chunkIndex + 1) / totalChunks) * 100;
+      setUploads((prev) =>
+        prev.map((u) =>
+          u.id === uploadId
+            ? { ...u, progress, loaded: end, speed, eta, status: "uploading" as const }
+            : u,
+        ),
+      );
+
+      // Update session info
+      sessionInfo.currentChunk = chunkIndex + 1;
+    }
+
+    // Cleanup
+    uploadSessions.current.delete(uploadId);
+    return true;
+  };
+
   const clearUploads = () => setUploads([]);
+
+  const handlePauseUpload = (uploadId: string) => {
+    const upload = uploads.find(u => u.id === uploadId);
+    if (!upload) return;
+
+    // Abort via AbortController
+    const sessionInfo = uploadSessions.current.get(uploadId);
+    if (sessionInfo) {
+      sessionInfo.abortController.abort();
+    }
+
+    // Update upload status
+    setUploads(prev => prev.map(u =>
+      u.id === uploadId ? { ...u, status: "paused" as const } : u
+    ));
+
+    // Also abort xhr for non-resumable uploads
+    const path = currentPath === "/"
+      ? `/${upload.file.name}`
+      : `${currentPath}/${upload.file.name}`;
+
+    const xhr = uploadControllers.get(path);
+    if (xhr) {
+      xhr.abort();
+    }
+  };
+
+  const handleResumeUpload = async (uploadId: string) => {
+    const upload = uploads.find(u => u.id === uploadId);
+    if (!upload) return;
+
+    const sessionInfo = uploadSessions.current.get(uploadId);
+    const CHUNK_SIZE = 5 * 1024 * 1024;
+    const RESUMABLE_THRESHOLD = 10 * 1024 * 1024;
+
+    // Update status to uploading and clear any error
+    setUploads(prev => prev.map(u =>
+      u.id === uploadId ? { ...u, status: "uploading" as const, error: undefined } : u
+    ));
+
+    const path = currentPath === "/"
+      ? `/${upload.file.name}`
+      : `${currentPath}/${upload.file.name}`;
+
+    try {
+      // If we have a session, resume from last chunk
+      if (sessionInfo && upload.file.size > RESUMABLE_THRESHOLD) {
+        const token = localStorage.getItem("auth-token");
+        const totalChunks = sessionInfo.totalChunks;
+        const startChunk = sessionInfo.currentChunk;
+        const resumeStartTime = Date.now();
+
+        // Create new AbortController for resume
+        const newAbortController = new AbortController();
+        sessionInfo.abortController = newAbortController;
+
+        // Continue uploading from where we left off
+        for (let chunkIndex = startChunk; chunkIndex < totalChunks; chunkIndex++) {
+          // Check if aborted again
+          if (newAbortController.signal.aborted) {
+            return;
+          }
+
+          const start = chunkIndex * CHUNK_SIZE;
+          const end = Math.min(start + CHUNK_SIZE, upload.file.size);
+          const chunk = upload.file.slice(start, end);
+
+          try {
+            let retries = 3;
+            while (retries > 0) {
+              try {
+                const chunkResponse = await fetch(
+                  `/api/uploads/${sessionInfo.sessionId}?chunk=${chunkIndex}`,
+                  {
+                    method: "PATCH",
+                    headers: {
+                      "Content-Type": "application/octet-stream",
+                      ...(token && { Authorization: `Bearer ${token}` }),
+                    },
+                    body: chunk,
+                    signal: newAbortController.signal,
+                  },
+                );
+
+                if (!chunkResponse.ok) {
+                  if (chunkResponse.status >= 500 || chunkResponse.status === 429) {
+                    throw new Error(`Server error: ${chunkResponse.status}`);
+                  }
+                  throw new Error(`Failed to upload chunk ${chunkIndex}`);
+                }
+                break; // Success
+              } catch (error: any) {
+                if (error.name === 'AbortError') throw error; // Don't retry aborts
+
+                retries--;
+                console.warn(`Chunk ${chunkIndex} failed, retries left: ${retries}`, error);
+
+                if (retries === 0) throw error;
+                await new Promise(resolve => setTimeout(resolve, (3 - retries) * 1000));
+              }
+            }
+
+            // Calculate speed and ETA
+            const elapsed = (Date.now() - resumeStartTime) / 1000;
+            const uploaded = end - (startChunk * CHUNK_SIZE);
+            const speed = uploaded / elapsed;
+            const remaining = upload.file.size - end;
+            const eta = remaining / speed;
+
+            // Update progress
+            const progress = ((chunkIndex + 1) / totalChunks) * 100;
+            setUploads((prev) =>
+              prev.map((u) =>
+                u.id === uploadId
+                  ? { ...u, progress, loaded: end, speed, eta }
+                  : u,
+              ),
+            );
+
+            // Update session info
+            if (sessionInfo) {
+              sessionInfo.currentChunk = chunkIndex + 1;
+            }
+          } catch (error: any) {
+            if (error.name === 'AbortError') {
+              return;
+            }
+            throw error;
+          }
+        }
+
+        // Cleanup and finish
+        uploadSessions.current.delete(uploadId);
+
+        setUploads(prev => prev.map(u =>
+          u.id === uploadId ? { ...u, status: "completed" as const, progress: 100 } : u
+        ));
+
+        // Refresh file list
+        const data = await filesApi.list(currentPath, sortBy, sortOrder);
+        setListing(data);
+      } else {
+        // For non-resumable uploads or small files, re-upload from scratch
+        await uploadWithProgress(path, upload.file, (data) => {
+          setUploads(prev => prev.map(u =>
+            u.id === uploadId ? { ...u, progress: data.progress, loaded: data.loaded, speed: data.speed, eta: data.eta } : u
+          ));
+        });
+
+        setUploads(prev => prev.map(u =>
+          u.id === uploadId ? { ...u, status: "completed" as const, progress: 100 } : u
+        ));
+
+        // Refresh file list after completion
+        const data = await filesApi.list(currentPath, sortBy, sortOrder);
+        setListing(data);
+      }
+    } catch (err: any) {
+      setUploads(prev => prev.map(u =>
+        u.id === uploadId ? { ...u, status: "error" as const, error: err.message } : u
+      ));
+    }
+  };
 
   // Handle new folder creation
   const handleCreateFolder = async (folderName: string) => {
@@ -719,6 +1036,7 @@ export const HomePage: React.FC = () => {
           display: sharesOpen ? "none" : "flex",
           gap: { xs: 2, sm: 3 },
           p: { xs: 2, sm: 3 },
+          pt: { xs: 9, sm: 11 }, // Account for fixed header (56px/64px + padding)
           overflow: "hidden",
           maxWidth: "100%",
         }}
@@ -931,7 +1249,12 @@ export const HomePage: React.FC = () => {
       />
 
       {/* Upload Progress */}
-      <UploadProgress uploads={uploads} onClose={clearUploads} />
+      <UploadProgress
+        uploads={uploads}
+        onClose={clearUploads}
+        onPause={handlePauseUpload}
+        onResume={handleResumeUpload}
+      />
     </Box>
   );
 };

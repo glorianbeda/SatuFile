@@ -6,6 +6,7 @@ import (
 	"github.com/satufile/satufile/auth"
 	"github.com/satufile/satufile/routes/api"
 	"github.com/satufile/satufile/share"
+	"github.com/satufile/satufile/uploads"
 	"github.com/satufile/satufile/users"
 )
 
@@ -20,11 +21,12 @@ import (
 //
 // Add new routes by creating a file in routes/ directory
 // with the pattern: {name}.{method}.go
-func RegisterRoutes(r *mux.Router, userRepo *users.Repository, root string, shareStorage share.StorageBackend) {
+func RegisterRoutes(r *mux.Router, userRepo *users.Repository, root string, shareStorage share.StorageBackend, uploadsStorage uploads.StorageBackend) {
 	// API dependencies
 	apiDeps := &api.Deps{
 		UserRepo: userRepo,
 		Share:    shareStorage,
+		Uploads:  uploadsStorage,
 		DataDir:  root,
 	}
 
@@ -66,4 +68,10 @@ func RegisterRoutes(r *mux.Router, userRepo *users.Repository, root string, shar
 	protectedAPI.HandleFunc("/share", api.SharePut(apiDeps)).Methods("PUT")
 	protectedAPI.HandleFunc("/share", api.ShareDelete(apiDeps)).Methods("DELETE")
 	protectedAPI.HandleFunc("/shares", api.SharesGet(apiDeps)).Methods("GET")
+
+	// Upload endpoints (resumable uploads)
+	protectedAPI.HandleFunc("/uploads", api.UploadCreate(apiDeps, root)).Methods("POST")
+	protectedAPI.HandleFunc("/uploads/{id}", api.UploadChunk(apiDeps, root)).Methods("PATCH")
+	protectedAPI.HandleFunc("/uploads/{id}", api.UploadProgress(apiDeps)).Methods("GET")
+	protectedAPI.HandleFunc("/uploads/{id}", api.UploadCancel(apiDeps)).Methods("DELETE")
 }
