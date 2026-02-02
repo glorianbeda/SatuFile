@@ -50,8 +50,8 @@ RUN apk add --no-cache ca-certificates curl
 # Copy the binary from builder
 COPY --from=backend-builder /app/satufile .
 
-# Copy frontend assets
-COPY --from=backend-builder /app/frontend/dist ./frontend/dist
+# Copy frontend assets directly from frontend-builder
+COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
 # Create data directory
 RUN mkdir -p /data

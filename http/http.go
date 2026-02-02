@@ -70,7 +70,8 @@ func corsMiddleware(next http.Handler) http.Handler {
 
 func securityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Security-Policy", `default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline';`)
+		// Relaxed CSP to allow fonts, workers, images, and blob URLs for PDF viewer
+		w.Header().Set("Content-Security-Policy", `default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; img-src 'self' data: blob:; worker-src 'self' blob: https://unpkg.com; connect-src 'self' blob:;`)
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "DENY")
 		next.ServeHTTP(w, r)

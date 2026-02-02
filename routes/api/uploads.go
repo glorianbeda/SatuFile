@@ -147,6 +147,23 @@ func UploadChunk(deps *Deps, root string) http.HandlerFunc {
 			return
 		}
 
+		// Validate chunk size
+		if chunkIndex < session.TotalChunks-1 {
+			// Non-terminal chunks must be exactly ChunkSize
+			if written != session.ChunkSize {
+				os.Remove(chunkPath) // Cleanup invalid chunk
+				http.Error(w, fmt.Sprintf("Invalid chunk size: expected %d, got %d", session.ChunkSize, written), http.StatusBadRequest)
+				return
+			}
+		} else {
+			// Last chunk must not exceed ChunkSize
+			if written > session.ChunkSize {
+				os.Remove(chunkPath) // Cleanup invalid chunk
+				http.Error(w, "Invalid chunk size: exceeds chunk size", http.StatusBadRequest)
+				return
+			}
+		}
+
 		// Update session only if this is a new chunk
 		if !chunkAlreadyExists {
 			session.UploadedChunks++
@@ -155,6 +172,12 @@ func UploadChunk(deps *Deps, root string) http.HandlerFunc {
 
 		// Check if all chunks uploaded
 		if session.UploadedChunks >= session.TotalChunks {
+			// Final size verification
+			if session.UploadedSize != session.TotalSize {
+				http.Error(w, fmt.Sprintf("Upload corrupted: expected total size %d, got %d", session.TotalSize, session.UploadedSize), http.StatusInternalServerError)
+				return
+			}
+
 			// Assemble file
 			finalPath := filepath.Join(root, session.Path)
 			if err := os.MkdirAll(filepath.Dir(finalPath), 0755); err != nil {
