@@ -252,45 +252,87 @@ export const HomePage: React.FC = () => {
     return counts;
   }, [gridFiles, user?.hideDotfiles]);
 
-  const handleSelect = (id: string) => {
-    setSelectedFiles((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
-    );
+  const handleSelect = (id: string, toggle: boolean = true) => {
+    setSelectedFiles((prev) => {
+      if (toggle) {
+        return prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id];
+      } else {
+        return prev.length === 1 && prev[0] === id ? [] : [id];
+      }
+    });
   };
 
-  const handleSelectAll = () => {
-    if (selectedFiles.length === files.length) {
+  const handleSelectAll = useCallback(() => {
+    if (selectedFiles.length === files.length && files.length > 0) {
       setSelectedFiles([]);
     } else {
       setSelectedFiles(files.map((f) => f.id));
     }
+  }, [files, selectedFiles]);
+
+  const handleUnselectAll = () => {
+    setSelectedFiles([]);
   };
 
-  const handleFileClick = (file: FileData) => {
+  // Global keydown listener for CTRL+A
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if user is typing in an input/textarea
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA"
+      ) {
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+        e.preventDefault();
+        handleSelectAll();
+      }
+      
+      if (e.key === "Escape") {
+        handleUnselectAll();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleSelectAll]);
+
+  const handleFileClick = (file: FileData, e: React.MouseEvent) => {
+    // If CTRL/Meta is held, or if we already have a selection (selection mode), toggle
+    if (e.ctrlKey || e.metaKey || selectedFiles.length > 0) {
+      handleSelect(file.id, true);
+    } else {
+      // Normal single click selects ONLY this one
+      handleSelect(file.id, false);
+    }
+  };
+
+  const handleFileDoubleClick = (file: FileData) => {
     if (file.type === "folder") {
       navigateToPath(file.id);
     } else if (isPreviewable(file.name)) {
-      // Convert FileData to FileItem format and open preview
-      const previewItem: FileItem = {
-        path: file.id,
-        name: file.name,
-        size: typeof file.size === "number" ? file.size : 0,
-        modified: file.modifiedAt || "",
-        isDir: false,
-        type: file.type,
-        extension: file.name.split(".").pop(),
-      };
-      setPreviewFile(previewItem);
+      setPreviewFile(fileDataToContextItem(file) as FileItem);
     } else {
       toast.info("Tidak ada preview untuk file ini");
     }
   };
 
-  const handleGridFileClick = (file: FileItem) => {
+  const handleGridFileClick = (file: FileItem, e: React.MouseEvent) => {
+    // If CTRL/Meta is held, or if we already have a selection (selection mode), toggle
+    if (e.ctrlKey || e.metaKey || selectedFiles.length > 0) {
+      handleSelect(file.path, true);
+    } else {
+      // Normal single click selects ONLY this one
+      handleSelect(file.path, false);
+    }
+  };
+
+  const handleGridFileDoubleClick = (file: FileItem) => {
     if (file.isDir) {
       navigateToPath(file.path);
     } else if (isPreviewable(file.name)) {
-      // Open preview for previewable files only
       setPreviewFile(file);
     } else {
       toast.info("Tidak ada preview untuk file ini");
@@ -1195,7 +1237,7 @@ export const HomePage: React.FC = () => {
             fileCounts={fileCounts}
           />
 
-          {/* Folder toolbar with sort + view toggle + back */}
+          {/* Folder toolbar with sort + view toggle + back + selection actions */}
           <FolderToolbar
             viewMode={viewMode}
             onViewModeChange={setViewMode}
@@ -1206,6 +1248,9 @@ export const HomePage: React.FC = () => {
             numFiles={listing?.numFiles}
             isAtRoot={isAtRoot}
             onBack={handleBack}
+            onSelectAll={handleSelectAll}
+            onUnselectAll={handleUnselectAll}
+            hasSelection={selectedFiles.length > 0}
           />
 
           {/* Content */}
@@ -1224,6 +1269,20 @@ export const HomePage: React.FC = () => {
             >
               Folder kosong. Upload file untuk memulai.
             </Typography>
+  const handleFileLongPress = (file: FileData) => {
+    handleSelect(file.id, true);
+    if (window.navigator.vibrate) {
+      window.navigator.vibrate(50);
+    }
+  };
+
+  const handleGridFileLongPress = (file: FileItem) => {
+    handleSelect(file.path, true);
+    if (window.navigator.vibrate) {
+      window.navigator.vibrate(50);
+    }
+  };
+// ... (skip lines)
           ) : viewMode === "list" ? (
             <FileList
               files={filteredFiles}
@@ -1231,6 +1290,8 @@ export const HomePage: React.FC = () => {
               onSelect={handleSelect}
               onSelectAll={handleSelectAll}
               onFileClick={handleFileClick}
+              onFileDoubleClick={handleFileDoubleClick}
+              onFileLongPress={handleFileLongPress}
               onDownload={handleFileDownload}
               onRename={handleFileRename}
               onDelete={handleFileDelete}
@@ -1245,6 +1306,8 @@ export const HomePage: React.FC = () => {
               selectedFiles={selectedFiles}
               onToggleSelect={handleSelect}
               onFileClick={handleGridFileClick}
+              onFileDoubleClick={handleGridFileDoubleClick}
+              onFileLongPress={handleGridFileLongPress}
               onMenuClick={handleMenuOpen}
               onContextMenu={handleBgContextMenu}
             />

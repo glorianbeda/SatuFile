@@ -22,6 +22,8 @@ import {
     ArrowDownward,
     ArrowBack,
     Visibility,
+    SelectAll,
+    Deselect,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '@/api';
@@ -41,6 +43,9 @@ interface FolderToolbarProps {
     numFiles?: number;
     isAtRoot?: boolean;
     onBack?: () => void;
+    onSelectAll?: () => void;
+    onUnselectAll?: () => void;
+    hasSelection?: boolean;
 }
 
 const sortOptions: { value: SortOption; label: string; icon: React.ReactNode }[] = [
@@ -59,6 +64,9 @@ export const FolderToolbar: React.FC<FolderToolbarProps> = ({
     numFiles,
     isAtRoot = true,
     onBack,
+    onSelectAll,
+    onUnselectAll,
+    hasSelection = false,
 }) => {
     const { user, updateAuth } = useAuth();
     const toast = useToast();
@@ -126,7 +134,7 @@ export const FolderToolbar: React.FC<FolderToolbarProps> = ({
                 mb: 2,
             }}
         >
-            {/* Left: Back button + File count */}
+            {/* Left: Back button + File count or Selection actions */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 {/* Back button */}
                 <Tooltip title={isAtRoot ? '' : 'Kembali'}>
@@ -142,15 +150,30 @@ export const FolderToolbar: React.FC<FolderToolbarProps> = ({
                     </span>
                 </Tooltip>
 
-                <Typography variant="body2" color="text.secondary">
-                    {numDirs !== undefined && numFiles !== undefined && (
-                        <>
-                            {numDirs > 0 && `${numDirs} folder`}
-                            {numDirs > 0 && numFiles > 0 && ', '}
-                            {numFiles > 0 && `${numFiles} file`}
-                        </>
-                    )}
-                </Typography>
+                {hasSelection ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Tooltip title="Pilih Semua">
+                            <IconButton size="small" onClick={onSelectAll} color="primary">
+                                <SelectAll fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Batal Pilih">
+                            <IconButton size="small" onClick={onUnselectAll}>
+                                <Deselect fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                    </Box>
+                ) : (
+                    <Typography variant="body2" color="text.secondary">
+                        {numDirs !== undefined && numFiles !== undefined && (
+                            <>
+                                {numDirs > 0 && `${numDirs} folder`}
+                                {numDirs > 0 && numFiles > 0 && ', '}
+                                {numFiles > 0 && `${numFiles} file`}
+                            </>
+                        )}
+                    </Typography>
+                )}
             </Box>
 
             {/* Right: Sort + View toggle */}

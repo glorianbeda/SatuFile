@@ -11,12 +11,14 @@ import {
     TableChart,
     Code,
     InsertDriveFile,
+    Share,
 } from '@mui/icons-material';
 
 interface FileIconProps {
     type: string;
     extension?: string;
     size?: 'small' | 'medium' | 'large';
+    isShared?: boolean;
 }
 
 const iconConfig: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {
@@ -53,15 +55,16 @@ const extensionMap: Record<string, string> = {
 };
 
 const sizeMap = {
-    small: { box: 32, icon: 18 },
-    medium: { box: 40, icon: 22 },
-    large: { box: 48, icon: 26 },
+    small: { box: 32, icon: 18, badge: 12, badgeIcon: 8 },
+    medium: { box: 40, icon: 22, badge: 16, badgeIcon: 10 },
+    large: { box: 48, icon: 26, badge: 20, badgeIcon: 12 },
 };
 
 export const FileIcon: React.FC<FileIconProps> = ({
     type,
     extension,
     size = 'medium',
+    isShared = false,
 }) => {
     let iconType = type;
 
@@ -74,22 +77,47 @@ export const FileIcon: React.FC<FileIconProps> = ({
     const dimensions = sizeMap[size];
 
     return (
-        <Box
-            sx={{
-                width: dimensions.box,
-                height: dimensions.box,
-                borderRadius: 2,
-                bgcolor: config.bg,
-                color: config.color,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                '& svg': {
-                    fontSize: dimensions.icon,
-                },
-            }}
-        >
-            {config.icon}
+        <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+            <Box
+                sx={{
+                    width: dimensions.box,
+                    height: dimensions.box,
+                    borderRadius: 2,
+                    bgcolor: config.bg,
+                    color: config.color,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    '& svg': {
+                        fontSize: dimensions.icon,
+                    },
+                }}
+            >
+                {config.icon}
+            </Box>
+            
+            {isShared && (
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        bottom: -2,
+                        left: -2,
+                        width: dimensions.badge,
+                        height: dimensions.badge,
+                        bgcolor: 'primary.main',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '2px solid',
+                        borderColor: 'background.paper',
+                        boxShadow: 1,
+                        zIndex: 1,
+                    }}
+                >
+                    <Share sx={{ fontSize: `${dimensions.badgeIcon}px !important`, color: 'white' }} />
+                </Box>
+            )}
         </Box>
     );
 };

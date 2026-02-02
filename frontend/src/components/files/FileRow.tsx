@@ -33,8 +33,11 @@ export interface FileData {
 interface FileRowProps {
   file: FileData;
   selected?: boolean;
+  anySelected?: boolean;
   onSelect?: (id: string) => void;
-  onClick?: (file: FileData) => void;
+  onClick?: (file: FileData, e: React.MouseEvent) => void;
+  onDoubleClick?: (file: FileData) => void;
+  onLongPress?: (file: FileData) => void;
   onDownload?: (file: FileData) => void;
   onRename?: (file: FileData) => void;
   onDelete?: (file: FileData) => void;
@@ -46,8 +49,11 @@ interface FileRowProps {
 export const FileRow: React.FC<FileRowProps> = ({
   file,
   selected = false,
+  anySelected = false,
   onSelect,
   onClick,
+  onDoubleClick,
+  onLongPress,
   onDownload,
   onRename,
   onDelete,
@@ -56,6 +62,22 @@ export const FileRow: React.FC<FileRowProps> = ({
   onHide,
 }) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const isLongPress = React.useRef(false);
+
+  const startPress = React.useCallback(() => {
+    isLongPress.current = false;
+    timerRef.current = setTimeout(() => {
+      isLongPress.current = true;
+      onLongPress?.(file);
+    }, 500);
+  }, [file, onLongPress]);
+
+  const endPress = React.useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+  }, []);
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
@@ -104,7 +126,24 @@ export const FileRow: React.FC<FileRowProps> = ({
           },
         }),
       }}
-      onClick={() => onClick?.(file)}
+      onMouseDown={startPress}
+      onMouseUp={endPress}
+      onMouseLeave={endPress}
+      onTouchStart={startPress}
+      onTouchEnd={endPress}
+      onClick={(e) => {
+        if (isLongPress.current) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        onClick?.(file, e);
+      }}
+      onDoubleClick={(e) => {
+        if (isLongPress.current) return;
+        e.stopPropagation();
+        onDoubleClick?.(file);
+      }}
       onContextMenu={(e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -119,6 +158,9 @@ export const FileRow: React.FC<FileRowProps> = ({
         onChange={() => onSelect?.(file.id)}
         sx={{
           color: selected ? "white" : "text.secondary",
+          opacity: selected || anySelected ? 1 : { xs: 1, sm: 0 },
+          transition: "opacity 0.2s",
+          "&:hover": { opacity: 1 },
           "&.Mui-checked": {
             color: selected ? "white" : "primary.main",
           },
@@ -126,7 +168,7 @@ export const FileRow: React.FC<FileRowProps> = ({
       />
 
       {/* Icon */}
-      <FileIcon type={file.type} extension={file.extension} />
+      <FileIcon type={file.type} extension={file.extension} isShared={file.isShared} />
 
       {/* Name */}
       <Typography
@@ -169,17 +211,6 @@ export const FileRow: React.FC<FileRowProps> = ({
       >
         {file.modifiedAt || "-"}
       </Typography>
-
-      {/* Shared Indicator */}
-      {file.isShared && (
-        <FolderShared
-          sx={{
-            fontSize: 16,
-            color: selected ? "white" : "primary.main",
-            ml: 0.5,
-          }}
-        />
-      )}
 
       {/* Actions */}
       <IconButton

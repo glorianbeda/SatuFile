@@ -9,10 +9,11 @@ import {
     PictureAsPdf,
     Article,
     MoreVert,
-    FolderShared,
+    Share,
 } from '@mui/icons-material';
 import { filesApi } from '../../api';
 import { ThumbnailImage } from './ThumbnailImage';
+import { FileIcon } from './FileIcon';
 
 export interface FileItem {
     path: string;
@@ -29,29 +30,12 @@ interface FileGridProps {
     files: FileItem[];
     selectedFiles: string[];
     onToggleSelect: (path: string) => void;
-    onFileClick: (file: FileItem) => void;
+    onFileClick: (file: FileItem, e: React.MouseEvent) => void;
+    onFileDoubleClick?: (file: FileItem) => void;
+    onFileLongPress?: (file: FileItem) => void;
     onMenuClick?: (file: FileItem, anchorEl: HTMLElement) => void;
     onContextMenu?: (e: React.MouseEvent) => void;
 }
-
-const getIcon = (file: FileItem) => {
-    if (file.isDir) return <Folder sx={{ fontSize: 48, color: '#90CAF9' }} />;
-
-    switch (file.type) {
-        case 'image':
-            return <Image sx={{ fontSize: 48, color: '#81C784' }} />;
-        case 'video':
-            return <VideoFile sx={{ fontSize: 48, color: '#FF8A65' }} />;
-        case 'audio':
-            return <AudioFile sx={{ fontSize: 48, color: '#BA68C8' }} />;
-        case 'pdf':
-            return <PictureAsPdf sx={{ fontSize: 48, color: '#E57373' }} />;
-        case 'text':
-            return <Article sx={{ fontSize: 48, color: '#64B5F6' }} />;
-        default:
-            return <InsertDriveFile sx={{ fontSize: 48, color: '#78909C' }} />;
-    }
-};
 
 const formatSize = (bytes: number): string => {
     if (bytes === 0) return '0 B';
@@ -73,9 +57,28 @@ export const FileGrid: React.FC<FileGridProps> = ({
     selectedFiles,
     onToggleSelect,
     onFileClick,
+    onFileDoubleClick,
+    onFileLongPress,
     onMenuClick,
     onContextMenu,
 }) => {
+    const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+    const isLongPress = React.useRef(false);
+
+    const startPress = (file: FileItem) => {
+        isLongPress.current = false;
+        timerRef.current = setTimeout(() => {
+            isLongPress.current = true;
+            onFileLongPress?.(file);
+        }, 500);
+    };
+
+    const endPress = () => {
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+        }
+    };
+
     return (
         <Box
             onContextMenu={onContextMenu}
@@ -94,11 +97,29 @@ export const FileGrid: React.FC<FileGridProps> = ({
                 const isSelected = selectedFiles.includes(file.path);
                 const showThumbnail = isImageFile(file);
                 const thumbnailUrl = showThumbnail ? filesApi.getDownloadUrl(file.path) : null;
+                const anySelected = selectedFiles.length > 0;
 
                 return (
                     <Box
                         key={file.path}
-                        onClick={() => onFileClick(file)}
+                        onMouseDown={() => startPress(file)}
+                        onMouseUp={endPress}
+                        onMouseLeave={endPress}
+                        onTouchStart={() => startPress(file)}
+                        onTouchEnd={endPress}
+                        onClick={(e) => {
+                            if (isLongPress.current) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                return;
+                            }
+                            onFileClick(file, e);
+                        }}
+                        onDoubleClick={(e) => {
+                            if (isLongPress.current) return;
+                            e.stopPropagation();
+                            onFileDoubleClick?.(file);
+                        }}
                         onContextMenu={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -138,8 +159,12 @@ export const FileGrid: React.FC<FileGridProps> = ({
                                 position: 'absolute',
                                 top: 4,
                                 left: 4,
-                                opacity: isSelected ? 1 : 0,
+                                opacity: isSelected || anySelected ? 1 : 0,
                                 '&:hover': { opacity: 1 },
+                                zIndex: 2,
+                                bgcolor: isSelected || anySelected ? 'background.paper' : 'transparent',
+                                borderRadius: '50%',
+                                p: 0.5,
                             }}
                         />
 
@@ -169,14 +194,43 @@ export const FileGrid: React.FC<FileGridProps> = ({
 
                         {/* Icon or Thumbnail */}
                         {showThumbnail && thumbnailUrl ? (
-                            <ThumbnailImage
-                                src={thumbnailUrl}
-                                alt={file.name}
-                                width={80}
-                                height={80}
-                            />
+                            <Box sx={{ position: 'relative' }}>
+                                <ThumbnailImage
+                                    src={thumbnailUrl}
+                                    alt={file.name}
+                                    width={80}
+                                    height={80}
+                                />
+                                {file.isShared && (
+                                    <Box
+                                        sx={{
+                                            position: 'absolute',
+                                            bottom: -2,
+                                            left: -2,
+                                            width: 20,
+                                            height: 20,
+                                            bgcolor: 'primary.main',
+                                            borderRadius: '50%',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            border: '2px solid',
+                                            borderColor: 'background.paper',
+                                            boxShadow: 1,
+                                            zIndex: 1,
+                                        }}
+                                    >
+                                        <Share sx={{ fontSize: '12px !important', color: 'white' }} />
+                                    </Box>
+                                )}
+                            </Box>
                         ) : (
-                            getIcon(file)
+                            <FileIcon 
+                                type={file.isDir ? 'folder' : 'file'} 
+                                extension={file.extension} 
+                                size="large" 
+                                isShared={file.isShared} 
+                            />
                         )}
 
                         {/* Name */}
@@ -198,19 +252,6 @@ export const FileGrid: React.FC<FileGridProps> = ({
                             <Typography variant="caption" color="text.secondary">
                                 {formatSize(file.size)}
                             </Typography>
-                        )}
-
-                        {/* Shared Indicator */}
-                        {file.isShared && (
-                            <FolderShared
-                                sx={{
-                                    position: 'absolute',
-                                    top: 4,
-                                    right: 4,
-                                    fontSize: 14,
-                                    color: 'primary.main',
-                                }}
-                            />
                         )}
                     </Box>
                 );

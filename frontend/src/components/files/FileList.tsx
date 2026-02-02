@@ -8,7 +8,9 @@ interface FileListProps {
   selectedIds?: string[];
   onSelect?: (id: string) => void;
   onSelectAll?: () => void;
-  onFileClick?: (file: FileData) => void;
+  onFileClick?: (file: FileData, e: React.MouseEvent) => void;
+  onFileDoubleClick?: (file: FileData) => void;
+  onFileLongPress?: (file: FileData) => void;
   onDownload?: (file: FileData) => void;
   onRename?: (file: FileData) => void;
   onDelete?: (file: FileData) => void;
@@ -24,6 +26,7 @@ export const FileList: React.FC<FileListProps> = ({
   onSelect,
   onSelectAll,
   onFileClick,
+  onFileDoubleClick,
   onDownload,
   onRename,
   onDelete,
@@ -35,6 +38,7 @@ export const FileList: React.FC<FileListProps> = ({
   const allSelected = files.length > 0 && selectedIds.length === files.length;
   const someSelected =
     selectedIds.length > 0 && selectedIds.length < files.length;
+  const anySelected = selectedIds.length > 0;
 
   return (
     <Box
@@ -99,8 +103,11 @@ export const FileList: React.FC<FileListProps> = ({
             key={file.id}
             file={file}
             selected={selectedIds.includes(file.id)}
+            anySelected={anySelected}
             onSelect={onSelect}
             onClick={onFileClick}
+            onDoubleClick={onFileDoubleClick}
+            onLongPress={onFileLongPress}
             onDownload={onDownload}
             onRename={onRename}
             onDelete={onDelete}
