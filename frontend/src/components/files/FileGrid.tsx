@@ -31,6 +31,7 @@ interface FileGridProps {
     onToggleSelect: (path: string) => void;
     onFileClick: (file: FileItem) => void;
     onMenuClick?: (file: FileItem, anchorEl: HTMLElement) => void;
+    onContextMenu?: (e: React.MouseEvent) => void;
 }
 
 const getIcon = (file: FileItem) => {
@@ -73,9 +74,11 @@ export const FileGrid: React.FC<FileGridProps> = ({
     onToggleSelect,
     onFileClick,
     onMenuClick,
+    onContextMenu,
 }) => {
     return (
         <Box
+            onContextMenu={onContextMenu}
             sx={{
                 display: 'grid',
                 gridTemplateColumns: {

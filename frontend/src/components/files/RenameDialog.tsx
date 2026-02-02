@@ -79,7 +79,7 @@ export const RenameDialog: React.FC<RenameDialogProps> = ({
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         error={!!error}
-                        helperText={error}
+                        helperText={error || (name.startsWith('.') ? "File akan tersembunyi. Aktifkan 'Tampilkan file tersembunyi' di pengaturan untuk melihatnya." : undefined)}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter' && !loading) {
                                 handleSubmit();

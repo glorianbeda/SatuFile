@@ -59,11 +59,11 @@ func SharePost(deps *Deps) http.HandlerFunc {
 			var hours int
 			if _, err := fmt.Sscanf(req.Expires, "%d", &hours); err == nil {
 				switch req.Unit {
-				case "hours":
+				case "hours", "hour":
 					expiresHours = hours
-				case "days":
+				case "days", "day":
 					expiresHours = hours * 24
-				case "weeks":
+				case "weeks", "week":
 					expiresHours = hours * 24 * 7
 				}
 			}

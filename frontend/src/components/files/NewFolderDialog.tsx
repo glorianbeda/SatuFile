@@ -74,7 +74,7 @@ export const NewFolderDialog: React.FC<NewFolderDialogProps> = ({
                         value={folderName}
                         onChange={(e) => setFolderName(e.target.value)}
                         error={!!error}
-                        helperText={error || `Akan dibuat di: ${currentPath === '/' ? '/' : currentPath + '/'}`}
+                        helperText={error || (folderName.startsWith('.') ? "Folder akan tersembunyi. Aktifkan 'Tampilkan file tersembunyi' di pengaturan untuk melihatnya." : `Akan dibuat di: ${currentPath === '/' ? '/' : currentPath + '/'}`)}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter' && !loading) {
                                 handleSubmit();

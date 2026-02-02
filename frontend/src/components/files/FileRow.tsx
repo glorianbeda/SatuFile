@@ -14,6 +14,7 @@ import {
   Delete,
   Share,
   Visibility,
+  VisibilityOff,
   FolderShared,
 } from "@mui/icons-material";
 import { FileIcon } from "./FileIcon";
@@ -39,6 +40,7 @@ interface FileRowProps {
   onDelete?: (file: FileData) => void;
   onShare?: (file: FileData) => void;
   onPreview?: (file: FileData) => void;
+  onHide?: (file: FileData) => void;
 }
 
 export const FileRow: React.FC<FileRowProps> = ({
@@ -51,6 +53,7 @@ export const FileRow: React.FC<FileRowProps> = ({
   onDelete,
   onShare,
   onPreview,
+  onHide,
 }) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
@@ -193,6 +196,14 @@ export const FileRow: React.FC<FileRowProps> = ({
         onClose={handleMenuClose}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "right" }}
+        onContextMenu={(e) => e.preventDefault()}
+        slotProps={{
+          backdrop: {
+            onContextMenu: (e) => {
+              e.preventDefault();
+            }
+          }
+        }}
       >
         {file.type === "folder" ? (
           <MenuItem
@@ -235,6 +246,16 @@ export const FileRow: React.FC<FileRowProps> = ({
             }}
           >
             <Share sx={{ mr: 1, fontSize: 18 }} /> Share
+          </MenuItem>
+        )}
+        {onHide && !file.name.startsWith(".") && (
+          <MenuItem
+            onClick={(e) => {
+              e.stopPropagation();
+              handleAction(onHide);
+            }}
+          >
+            <VisibilityOff sx={{ mr: 1, fontSize: 18 }} /> Sembunyikan
           </MenuItem>
         )}
         {onRename && (

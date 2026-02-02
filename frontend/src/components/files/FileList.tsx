@@ -14,6 +14,8 @@ interface FileListProps {
   onDelete?: (file: FileData) => void;
   onShare?: (file: FileData) => void;
   onPreview?: (file: FileData) => void;
+  onHide?: (file: FileData) => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
 }
 
 export const FileList: React.FC<FileListProps> = ({
@@ -27,6 +29,8 @@ export const FileList: React.FC<FileListProps> = ({
   onDelete,
   onShare,
   onPreview,
+  onHide,
+  onContextMenu,
 }) => {
   const allSelected = files.length > 0 && selectedIds.length === files.length;
   const someSelected =
@@ -35,6 +39,7 @@ export const FileList: React.FC<FileListProps> = ({
   return (
     <Box
       sx={{ bgcolor: "background.paper", borderRadius: 3, overflow: "hidden" }}
+      onContextMenu={onContextMenu}
     >
       {/* Header */}
       <Box
@@ -101,6 +106,7 @@ export const FileList: React.FC<FileListProps> = ({
             onDelete={onDelete}
             onShare={onShare}
             onPreview={onPreview}
+            onHide={onHide}
           />
         ))}
       </Box>

@@ -9,6 +9,7 @@ import {
     Divider,
     ListItemIcon,
     ListItemText,
+    Switch,
 } from '@mui/material';
 import {
     ViewList,
@@ -20,7 +21,11 @@ import {
     ArrowUpward,
     ArrowDownward,
     ArrowBack,
+    Visibility,
 } from '@mui/icons-material';
+import { useAuth } from '../../contexts/AuthContext';
+import { api } from '@/api';
+import { useToast } from '../../contexts/ToastProvider';
 
 export type ViewMode = 'list' | 'grid';
 export type SortOption = 'name' | 'modified' | 'size';
@@ -55,7 +60,10 @@ export const FolderToolbar: React.FC<FolderToolbarProps> = ({
     isAtRoot = true,
     onBack,
 }) => {
+    const { user, updateAuth } = useAuth();
+    const toast = useToast();
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const [viewMenuAnchor, setViewMenuAnchor] = React.useState<null | HTMLElement>(null);
 
     const currentSort = sortOptions.find((s) => s.value === sortBy) || sortOptions[0];
 
@@ -65,6 +73,31 @@ export const FolderToolbar: React.FC<FolderToolbarProps> = ({
 
     const handleSortClose = () => {
         setAnchorEl(null);
+    };
+
+    const handleViewMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+        setViewMenuAnchor(event.currentTarget);
+    };
+
+    const handleViewMenuClose = () => {
+        setViewMenuAnchor(null);
+    };
+
+    const handleToggleHidden = async () => {
+        if (!user) return;
+        const newValue = !user.hideDotfiles;
+        try {
+            const updatedUser = await api.put<any>('/me', {
+                hideDotfiles: newValue,
+            });
+            const token = localStorage.getItem('auth-token');
+            if (token) {
+                updateAuth(token, { ...user, ...updatedUser });
+            }
+            toast.success(newValue ? 'File tersembunyi disembunyikan' : 'File tersembunyi ditampilkan');
+        } catch (err) {
+            toast.error('Gagal memperbarui preferensi');
+        }
     };
 
     const handleSortSelect = (option: SortOption) => {
@@ -122,6 +155,33 @@ export const FolderToolbar: React.FC<FolderToolbarProps> = ({
 
             {/* Right: Sort + View toggle */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {/* Hidden files toggle */}
+                <Tooltip title="Opsi Tampilan">
+                    <IconButton size="small" onClick={handleViewMenuClick}>
+                        <Visibility fontSize="small" />
+                    </IconButton>
+                </Tooltip>
+
+                <Menu
+                    anchorEl={viewMenuAnchor}
+                    open={Boolean(viewMenuAnchor)}
+                    onClose={handleViewMenuClose}
+                >
+                    <MenuItem onClick={handleToggleHidden}>
+                        <ListItemIcon>
+                            <Switch
+                                size="small"
+                                edge="start"
+                                checked={!user?.hideDotfiles}
+                                disableRipple
+                            />
+                        </ListItemIcon>
+                        <ListItemText primary="Tampilkan File Tersembunyi" />
+                    </MenuItem>
+                </Menu>
+
+                <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+
                 {/* Sort button */}
                 <Tooltip title="Urutkan">
                     <Box

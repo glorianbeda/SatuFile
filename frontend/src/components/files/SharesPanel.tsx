@@ -47,7 +47,7 @@ import { useToast } from '@/contexts/ToastProvider';
 interface ShareLink {
     token: string;
     path: string;
-    expires: string | null;
+    expires_at: string | null;
     userID: number;
 }
 
@@ -139,14 +139,30 @@ const SharesView: React.FC<SharesViewProps> = ({ onClose }) => {
         const date = new Date(dateStr);
         const now = new Date();
         const diffMs = date.getTime() - now.getTime();
+        const diffHours = diffMs / (1000 * 60 * 60);
         const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
-        if (diffDays < 0) return { text: 'Expired', color: 'error' as const };
-        if (diffDays === 0) return { text: 'Hari ini', color: 'warning' as const };
+        if (diffMs < 0) return { text: 'Expired', color: 'error' as const };
+        
+        // Less than 24 hours
+        if (diffHours <= 24) {
+            const hours = Math.floor(diffHours);
+            const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            
+            if (hours < 1) {
+                return { text: `Sisa ${minutes} menit`, color: 'warning' as const };
+            }
+            return { text: `Sisa ${hours} jam`, color: 'warning' as const };
+        }
+
         if (diffDays === 1) return { text: 'Besok', color: 'warning' as const };
         if (diffDays <= 7) return { text: `${diffDays} hari lagi`, color: 'info' as const };
+        
+        // Show specific date and time for longer durations
+        const dateString = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        const timeString = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
         return {
-            text: date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+            text: `${dateString}, ${timeString}`,
             color: 'default' as const
         };
     };
@@ -167,7 +183,7 @@ const SharesView: React.FC<SharesViewProps> = ({ onClose }) => {
     );
 
     return (
-        <Box sx={{ flex: 1, overflow: 'auto' }}>
+        <Box sx={{ flex: 1, overflow: 'auto', pt: { xs: 7, sm: 8 } }}>
             {/* Header - Floating/Sticky */}
             <Box
                 sx={{
@@ -288,7 +304,7 @@ const SharesView: React.FC<SharesViewProps> = ({ onClose }) => {
                                     </TableHead>
                                     <TableBody>
                                         {paginatedShares.map((share) => {
-                                            const expiry = formatDate(share.expires);
+                                            const expiry = formatDate(share.expires_at);
                                             return (
                                                 <TableRow
                                                     key={share.token}

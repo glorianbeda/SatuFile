@@ -10,6 +10,7 @@ import {
   Edit,
   Delete,
   Visibility,
+  VisibilityOff,
   FolderOpen,
   Share,
 } from "@mui/icons-material";
@@ -32,6 +33,7 @@ interface FileContextMenuProps {
   onDelete?: (file: FileContextMenuItem) => void;
   onPreview?: (file: FileContextMenuItem) => void;
   onShare?: (file: FileContextMenuItem) => void;
+  onHide?: (file: FileContextMenuItem) => void;
 }
 
 export const FileContextMenu: React.FC<FileContextMenuProps> = ({
@@ -45,6 +47,7 @@ export const FileContextMenu: React.FC<FileContextMenuProps> = ({
   onDelete,
   onPreview,
   onShare,
+  onHide,
 }) => {
   if (!file) return null;
 
@@ -66,6 +69,8 @@ export const FileContextMenu: React.FC<FileContextMenuProps> = ({
       ["mp4", "webm", "avi", "mov", "mkv"].includes(ext) ||
       ["mp3", "wav", "ogg", "m4a", "flac"].includes(ext) ||
       ext === "pdf");
+  
+  const isHidden = file.name.startsWith(".");
 
   // Build menu items as array to avoid Fragment issue with MUI Menu
   const menuItems: React.ReactNode[] = [];
@@ -111,6 +116,17 @@ export const FileContextMenu: React.FC<FileContextMenuProps> = ({
     );
   }
 
+  if (onHide && !isHidden) {
+    menuItems.push(
+      <MenuItem key="hide" onClick={(e) => handleAction(e, onHide)}>
+        <ListItemIcon>
+          <VisibilityOff fontSize="small" />
+        </ListItemIcon>
+        <ListItemText>Sembunyikan</ListItemText>
+      </MenuItem>,
+    );
+  }
+
   if (onRename) {
     menuItems.push(
       <MenuItem key="rename" onClick={(e) => handleAction(e, onRename)}>
@@ -142,6 +158,14 @@ export const FileContextMenu: React.FC<FileContextMenuProps> = ({
       onClose={onClose}
       anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       transformOrigin={{ vertical: "top", horizontal: "right" }}
+      onContextMenu={(e) => e.preventDefault()}
+      slotProps={{
+        backdrop: {
+          onContextMenu: (e) => {
+            e.preventDefault();
+          }
+        }
+      }}
     >
       {menuItems}
     </Menu>

@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Box, Typography, CircularProgress, alpha } from "@mui/material";
 import { CloudUpload } from "@mui/icons-material";
 import { Header, StoragePanel } from "@/components/layout";
+import { useTheme } from "../../contexts/ThemeProvider";
+import { useAuth } from "../../contexts/AuthContext";
 import { useToast } from "@/contexts/ToastProvider";
 import {
   FileList,
@@ -25,6 +27,7 @@ import {
   FileContextMenu,
   type FileContextMenuItem,
 } from "@/components/files/FileContextMenu";
+import { BackgroundContextMenu } from "@/components/files/BackgroundContextMenu";
 import { FilePreviewModal } from "@/components/files/FilePreviewModal";
 import { RenameDialog } from "@/components/files/RenameDialog";
 import { ShareDialog } from "@/components/files/ShareDialog";
@@ -36,6 +39,7 @@ export const HomePage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const toast = useToast();
+  const { user } = useAuth();
 
   const [uploadOpen, setUploadOpen] = useState(false);
   const [newFolderOpen, setNewFolderOpen] = useState(false);
@@ -45,6 +49,9 @@ export const HomePage: React.FC = () => {
   // Context menu state
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [menuFile, setMenuFile] = useState<FileItem | null>(null);
+
+  // Background context menu state
+  const [bgMenuAnchor, setBgMenuAnchor] = useState<{ top: number; left: number } | null>(null);
 
   // Preview modal state
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
@@ -206,35 +213,44 @@ export const HomePage: React.FC = () => {
 
   // Filtered files based on activeCategory
   const filteredFiles = useMemo(() => {
-    if (!activeCategory) return files;
-    return files.filter((f) => {
+    let result = files;
+    if (user?.hideDotfiles) {
+      result = result.filter((f) => !f.name.startsWith("."));
+    }
+    if (!activeCategory) return result;
+    return result.filter((f) => {
       if (f.type === "folder") return true; // Always show folders
       const ext = f.extension || getExtFromName(f.name);
       return getCategoryType(ext) === activeCategory;
     });
-  }, [files, activeCategory]);
+  }, [files, activeCategory, user?.hideDotfiles]);
 
   const filteredGridFiles = useMemo(() => {
-    if (!activeCategory) return gridFiles;
-    return gridFiles.filter((f) => {
+    let result = gridFiles;
+    if (user?.hideDotfiles) {
+      result = result.filter((f) => !f.name.startsWith("."));
+    }
+    if (!activeCategory) return result;
+    return result.filter((f) => {
       if (f.isDir) return true; // Always show folders
       const ext = f.extension || getExtFromName(f.name);
       return getCategoryType(ext, f.type) === activeCategory;
     });
-  }, [gridFiles, activeCategory]);
+  }, [gridFiles, activeCategory, user?.hideDotfiles]);
 
   // Calculate file counts per category
   const fileCounts = useMemo(() => {
     const counts = { documents: 0, image: 0, video: 0, audio: 0, total: 0 };
     gridFiles.forEach((f) => {
       if (f.isDir) return;
+      if (user?.hideDotfiles && f.name.startsWith(".")) return;
       counts.total++;
       const ext = f.extension || getExtFromName(f.name);
       const cat = getCategoryType(ext, f.type);
       if (cat && cat in counts) counts[cat as keyof typeof counts]++;
     });
     return counts;
-  }, [gridFiles]);
+  }, [gridFiles, user?.hideDotfiles]);
 
   const handleSelect = (id: string) => {
     setSelectedFiles((prev) =>
@@ -299,6 +315,29 @@ export const HomePage: React.FC = () => {
   };
 
   const isAtRoot = currentPath === "/";
+
+  const handleRefresh = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await filesApi.list(currentPath, sortBy, sortOrder);
+      setListing(data);
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Failed to load files");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBgContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setBgMenuAnchor({ top: e.clientY, left: e.clientX });
+  }, []);
+
+  const handleBgMenuClose = useCallback(() => {
+    setBgMenuAnchor(null);
+  }, []);
 
   const handleUpload = async (uploadFiles: File[]) => {
     const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
@@ -912,6 +951,27 @@ export const HomePage: React.FC = () => {
     }
   };
 
+  const handleHide = async (file: FileContextMenuItem) => {
+    if (file.name.startsWith(".")) return;
+
+    try {
+      // Get directory path
+      const dir = file.path.substring(0, file.path.lastIndexOf("/") + 1);
+      // New path is dir + . + name
+      // Actually filesApi.rename takes current path and new NAME only
+      const newName = "." + file.name;
+      
+      await filesApi.rename(file.path, newName);
+      
+      // Refresh file list
+      const data = await filesApi.list(currentPath, sortBy, sortOrder);
+      setListing(data);
+      toast.success("File berhasil disembunyikan");
+    } catch (err: any) {
+      toast.error(err.response?.data || "Gagal menyembunyikan file");
+    }
+  };
+
   // Convert FileData to FileContextMenuItem for use with action handlers
   const fileDataToContextItem = (file: FileData): FileContextMenuItem => ({
     path: file.id,
@@ -929,6 +989,8 @@ export const HomePage: React.FC = () => {
     handleDeleteConfirm(fileDataToContextItem(file));
   const handleFilePreview = (file: FileData) =>
     handlePreview(fileDataToContextItem(file));
+  const handleFileHide = (file: FileData) => 
+    handleHide(fileDataToContextItem(file));
   const handleFileShare = (file: FileData) => {
     setShareFile(fileDataToContextItem(file));
     setShareFileName(file.name);
@@ -1062,6 +1124,7 @@ export const HomePage: React.FC = () => {
 
       {/* Main content */}
       <Box
+        onContextMenu={handleBgContextMenu}
         sx={{
           flex: 1,
           display: sharesOpen ? "none" : "flex",
@@ -1078,6 +1141,7 @@ export const HomePage: React.FC = () => {
           onDragLeave={handleDragLeave}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
+          onContextMenu={handleBgContextMenu}
           sx={{
             flex: 1,
             minWidth: 0,
@@ -1172,6 +1236,8 @@ export const HomePage: React.FC = () => {
               onDelete={handleFileDelete}
               onShare={handleFileShare}
               onPreview={handleFilePreview}
+              onHide={handleFileHide}
+              onContextMenu={handleBgContextMenu}
             />
           ) : (
             <FileGrid
@@ -1180,6 +1246,7 @@ export const HomePage: React.FC = () => {
               onToggleSelect={handleSelect}
               onFileClick={handleGridFileClick}
               onMenuClick={handleMenuOpen}
+              onContextMenu={handleBgContextMenu}
             />
           )}
         </Box>
@@ -1222,6 +1289,16 @@ export const HomePage: React.FC = () => {
         currentPath={currentPath}
       />
 
+      {/* Background Context Menu */}
+      <BackgroundContextMenu
+        open={Boolean(bgMenuAnchor)}
+        onClose={handleBgMenuClose}
+        anchorPosition={bgMenuAnchor}
+        onNewFolder={() => setNewFolderOpen(true)}
+        onUpload={() => setUploadOpen(true)}
+        onRefresh={handleRefresh}
+      />
+
       {/* Context Menu */}
       <FileContextMenu
         anchorEl={menuAnchor}
@@ -1234,6 +1311,7 @@ export const HomePage: React.FC = () => {
         onDelete={handleDeleteConfirm}
         onPreview={handlePreview}
         onShare={handleItemShare}
+        onHide={handleHide}
       />
 
       {/* Preview Modal */}
