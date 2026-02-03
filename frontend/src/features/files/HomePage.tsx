@@ -33,6 +33,7 @@ import { ShareDialog } from "@/components/files/ShareDialog";
 import { DeleteConfirmDialog } from "@/components/common/DeleteConfirmDialog";
 import { filesApi, type DirectoryListing } from "@/api";
 import type { FileData } from "@/components/files";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 export const HomePage: React.FC = () => {
   const location = useLocation();
@@ -116,22 +117,37 @@ export const HomePage: React.FC = () => {
     [navigate],
   );
 
+  const fetchFiles = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await filesApi.list(currentPath, sortBy, sortOrder);
+      setListing(data);
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Failed to load files");
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPath, sortBy, sortOrder]);
+
+  // WebSocket for real-time updates
+  const { lastMessage } = useWebSocket('/api/ws');
+
+  useEffect(() => {
+    if (lastMessage?.type === 'FS_EVENT') {
+      const { path, op } = lastMessage.payload;
+      console.log('Real-time FS event:', op, path);
+      
+      // Refresh if the event is related to current directory
+      // Simplification: refresh on any FS event for now to ensure consistency
+      fetchFiles();
+    }
+  }, [lastMessage, fetchFiles]);
+
   // Fetch files from API
   useEffect(() => {
-    const fetchFiles = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await filesApi.list(currentPath, sortBy, sortOrder);
-        setListing(data);
-      } catch (err: any) {
-        setError(err.response?.data?.error || "Failed to load files");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchFiles();
-  }, [currentPath, sortBy, sortOrder]);
+  }, [fetchFiles]);
 
   // Convert API FileInfo to FileData for components
   const files: FileData[] =

@@ -151,8 +151,21 @@ func runServer(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Initialize WebSocket Hub
+	hub := fbhttp.NewHub()
+	go hub.Run()
+
+	// Initialize FS Watcher
+	watcher, err := fbhttp.NewWatcher(cfg.Root, hub)
+	if err != nil {
+		log.Printf("Warning: failed to initialize FS watcher: %v", err)
+	} else {
+		go watcher.Watch()
+		defer watcher.Close()
+	}
+
 	// Create HTTP handler
-	handler := fbhttp.NewHandler(cfg, userRepo, storageBackend)
+	handler := fbhttp.NewHandler(cfg, userRepo, storageBackend, hub)
 
 	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
 	log.Printf("Starting SatuFile server on http://%s", addr)

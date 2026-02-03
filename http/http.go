@@ -16,13 +16,18 @@ import (
 )
 
 // NewHandler creates a main HTTP handler with all routes
-func NewHandler(cfg *settings.Config, userRepo *users.Repository, storageBackend *storage.Storage) http.Handler {
+func NewHandler(cfg *settings.Config, userRepo *users.Repository, storageBackend *storage.Storage, hub *Hub) http.Handler {
 	r := mux.NewRouter()
 
 	// Global middleware
 	r.Use(middleware.SecurityHeaders)
 	r.Use(middleware.CORSMiddleware)
 	r.Use(middleware.GlobalRateLimit)
+
+	// WebSocket endpoint
+	r.HandleFunc("/api/ws", func(w http.ResponseWriter, r *http.Request) {
+		ServeWs(hub, w, r)
+	})
 
 	// Register file-based routes
 	routes.RegisterRoutes(r, userRepo, cfg.Root, storageBackend.Share, storageBackend.Uploads)
@@ -34,12 +39,17 @@ func NewHandler(cfg *settings.Config, userRepo *users.Repository, storageBackend
 }
 
 // NewHandlerWithAssets creates handler with embedded frontend assets
-func NewHandlerWithAssets(cfg *settings.Config, userRepo *users.Repository, storageBackend *storage.Storage, assets fs.FS) http.Handler {
+func NewHandlerWithAssets(cfg *settings.Config, userRepo *users.Repository, storageBackend *storage.Storage, assets fs.FS, hub *Hub) http.Handler {
 	r := mux.NewRouter()
 
 	r.Use(middleware.SecurityHeaders)
 	r.Use(middleware.CORSMiddleware)
 	r.Use(middleware.GlobalRateLimit)
+
+	// WebSocket endpoint
+	r.HandleFunc("/api/ws", func(w http.ResponseWriter, r *http.Request) {
+		ServeWs(hub, w, r)
+	})
 
 	// Register file-based routes
 	routes.RegisterRoutes(r, userRepo, cfg.Root, storageBackend.Share, storageBackend.Uploads)
