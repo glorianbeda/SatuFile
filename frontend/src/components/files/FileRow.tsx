@@ -33,6 +33,7 @@ interface FileRowProps {
   file: FileData;
   selected?: boolean;
   anySelected?: boolean;
+  isMultiSelectMode?: boolean;
   onSelect?: (id: string) => void;
   onClick?: (file: FileData, e: React.MouseEvent) => void;
   onDoubleClick?: (file: FileData) => void;
@@ -49,6 +50,7 @@ export const FileRow: React.FC<FileRowProps> = ({
   file,
   selected = false,
   anySelected = false,
+  isMultiSelectMode = false,
   onSelect,
   onClick,
   onDoubleClick,
@@ -157,7 +159,7 @@ export const FileRow: React.FC<FileRowProps> = ({
         onChange={() => onSelect?.(file.id)}
         sx={{
           color: selected ? "white" : "text.secondary",
-          opacity: selected || anySelected ? 1 : { xs: 1, sm: 0 },
+          opacity: selected || anySelected || isMultiSelectMode ? 1 : { xs: 1, sm: 0 },
           transition: "opacity 0.2s",
           "&:hover": { opacity: 1 },
           "&.Mui-checked": {

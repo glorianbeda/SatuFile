@@ -43,6 +43,7 @@ export const HomePage: React.FC = () => {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [newFolderOpen, setNewFolderOpen] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | undefined>();
 
   // Context menu state
@@ -253,11 +254,21 @@ export const HomePage: React.FC = () => {
 
   const handleSelect = (id: string, toggle: boolean = true) => {
     setSelectedFiles((prev) => {
+      let next;
       if (toggle) {
-        return prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id];
+        next = prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id];
       } else {
-        return prev.length === 1 && prev[0] === id ? [] : [id];
+        next = prev.length === 1 && prev[0] === id ? [] : [id];
       }
+      
+      // Manage multi-select mode flag
+      if (next.length === 0) {
+        setIsMultiSelectMode(false);
+      } else if (next.length > 1) {
+        setIsMultiSelectMode(true);
+      }
+      
+      return next;
     });
   };
 
@@ -271,6 +282,7 @@ export const HomePage: React.FC = () => {
 
   const handleUnselectAll = () => {
     setSelectedFiles([]);
+    setIsMultiSelectMode(false);
   };
 
   // Global keydown listener for CTRL+A
@@ -299,11 +311,11 @@ export const HomePage: React.FC = () => {
   }, [handleSelectAll]);
 
   const handleFileClick = (file: FileData, e: React.MouseEvent) => {
-    // If CTRL/Meta is held, or if we already have a selection (selection mode), toggle
-    if (e.ctrlKey || e.metaKey || selectedFiles.length > 0) {
+    // If CTRL/Meta is held, or if we are in multi-select mode, toggle
+    if (e.ctrlKey || e.metaKey || isMultiSelectMode) {
       handleSelect(file.id, true);
     } else {
-      // Normal single click selects ONLY this one
+      // Normal single click selects ONLY this one (replaces current selection)
       handleSelect(file.id, false);
     }
   };
@@ -319,11 +331,11 @@ export const HomePage: React.FC = () => {
   };
 
   const handleGridFileClick = (file: FileItem, e: React.MouseEvent) => {
-    // If CTRL/Meta is held, or if we already have a selection (selection mode), toggle
-    if (e.ctrlKey || e.metaKey || selectedFiles.length > 0) {
+    // If CTRL/Meta is held, or if we are in multi-select mode, toggle
+    if (e.ctrlKey || e.metaKey || isMultiSelectMode) {
       handleSelect(file.path, true);
     } else {
-      // Normal single click selects ONLY this one
+      // Normal single click selects ONLY this one (replaces current selection)
       handleSelect(file.path, false);
     }
   };
@@ -1139,6 +1151,7 @@ export const HomePage: React.FC = () => {
   );
 
   const handleFileLongPress = (file: FileData) => {
+    setIsMultiSelectMode(true);
     handleSelect(file.id, true);
     if (window.navigator.vibrate) {
       window.navigator.vibrate(50);
@@ -1146,6 +1159,7 @@ export const HomePage: React.FC = () => {
   };
 
   const handleGridFileLongPress = (file: FileItem) => {
+    setIsMultiSelectMode(true);
     handleSelect(file.path, true);
     if (window.navigator.vibrate) {
       window.navigator.vibrate(50);
@@ -1284,6 +1298,7 @@ export const HomePage: React.FC = () => {
             <FileList
               files={filteredFiles}
               selectedIds={selectedFiles}
+              isMultiSelectMode={isMultiSelectMode}
               onSelect={handleSelect}
               onSelectAll={handleSelectAll}
               onFileClick={handleFileClick}
@@ -1301,6 +1316,7 @@ export const HomePage: React.FC = () => {
             <FileGrid
               files={filteredGridFiles}
               selectedFiles={selectedFiles}
+              isMultiSelectMode={isMultiSelectMode}
               onToggleSelect={handleSelect}
               onFileClick={handleGridFileClick}
               onFileDoubleClick={handleGridFileDoubleClick}

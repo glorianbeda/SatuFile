@@ -6,6 +6,7 @@ import type { FileData } from "./FileRow";
 interface FileListProps {
   files: FileData[];
   selectedIds?: string[];
+  isMultiSelectMode?: boolean;
   onSelect?: (id: string) => void;
   onSelectAll?: () => void;
   onFileClick?: (file: FileData, e: React.MouseEvent) => void;
@@ -23,6 +24,7 @@ interface FileListProps {
 export const FileList: React.FC<FileListProps> = ({
   files,
   selectedIds = [],
+  isMultiSelectMode = false,
   onSelect,
   onSelectAll,
   onFileClick,
@@ -105,6 +107,7 @@ export const FileList: React.FC<FileListProps> = ({
             file={file}
             selected={selectedIds.includes(file.id)}
             anySelected={anySelected}
+            isMultiSelectMode={isMultiSelectMode}
             onSelect={onSelect}
             onClick={onFileClick}
             onDoubleClick={onFileDoubleClick}

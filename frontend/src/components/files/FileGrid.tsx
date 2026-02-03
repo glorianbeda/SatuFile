@@ -22,6 +22,7 @@ export interface FileItem {
 interface FileGridProps {
     files: FileItem[];
     selectedFiles: string[];
+    isMultiSelectMode?: boolean;
     onToggleSelect: (path: string) => void;
     onFileClick: (file: FileItem, e: React.MouseEvent) => void;
     onFileDoubleClick?: (file: FileItem) => void;
@@ -48,6 +49,7 @@ const isImageFile = (file: FileItem): boolean => {
 export const FileGrid: React.FC<FileGridProps> = ({
     files,
     selectedFiles,
+    isMultiSelectMode = false,
     onToggleSelect,
     onFileClick,
     onFileDoubleClick,
@@ -152,10 +154,10 @@ export const FileGrid: React.FC<FileGridProps> = ({
                                 position: 'absolute',
                                 top: 4,
                                 left: 4,
-                                opacity: isSelected || anySelected ? 1 : 0,
+                                opacity: isSelected || anySelected || isMultiSelectMode ? 1 : 0,
                                 '&:hover': { opacity: 1 },
                                 zIndex: 2,
-                                bgcolor: isSelected || anySelected ? 'background.paper' : 'transparent',
+                                bgcolor: isSelected || anySelected || isMultiSelectMode ? 'background.paper' : 'transparent',
                                 borderRadius: '50%',
                                 p: 0.5,
                             }}
