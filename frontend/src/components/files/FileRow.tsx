@@ -15,7 +15,6 @@ import {
   Share,
   Visibility,
   VisibilityOff,
-  FolderShared,
 } from "@mui/icons-material";
 import { FileIcon } from "./FileIcon";
 
@@ -62,7 +61,7 @@ export const FileRow: React.FC<FileRowProps> = ({
   onHide,
 }) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLongPress = React.useRef(false);
 
   const startPress = React.useCallback(() => {
@@ -240,7 +239,7 @@ export const FileRow: React.FC<FileRowProps> = ({
           <MenuItem
             onClick={(e) => {
               e.stopPropagation();
-              onClick?.(file);
+              onClick?.(file, e);
             }}
           >
             <Download sx={{ mr: 1, fontSize: 18 }} /> Open Folder

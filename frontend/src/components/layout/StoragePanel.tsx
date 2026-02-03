@@ -12,7 +12,7 @@ import {
     AudioFile,
     Folder,
 } from '@mui/icons-material';
-import { filesApi } from '../../api';
+import { filesApi } from '@/api';
 
 interface StorageCategory {
     name: string;

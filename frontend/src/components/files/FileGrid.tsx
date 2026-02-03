@@ -1,17 +1,10 @@
 import React from 'react';
 import { Box, Typography, Checkbox, IconButton } from '@mui/material';
 import {
-    Folder,
-    InsertDriveFile,
-    Image,
-    VideoFile,
-    AudioFile,
-    PictureAsPdf,
-    Article,
     MoreVert,
     Share,
 } from '@mui/icons-material';
-import { filesApi } from '../../api';
+import { filesApi } from '@/api';
 import { ThumbnailImage } from './ThumbnailImage';
 import { FileIcon } from './FileIcon';
 
@@ -62,7 +55,7 @@ export const FileGrid: React.FC<FileGridProps> = ({
     onMenuClick,
     onContextMenu,
 }) => {
-    const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+    const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
     const isLongPress = React.useRef(false);
 
     const startPress = (file: FileItem) => {

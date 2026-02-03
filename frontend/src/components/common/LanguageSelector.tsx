@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Box, FormControl, MenuItem, Select, Typography } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
 import Flag from 'react-world-flags';
-import i18n from '../../i18n/config';
-import { saveLanguage } from '../../i18n/utils';
-import { useAuth } from '../../contexts/AuthContext';
-import { useToast } from '../../contexts/ToastProvider';
-import { api } from '../../api';
-import { useTranslation } from '../../hooks/useTranslation';
+import i18n from '@/i18n/config';
+import { saveLanguage } from '@/i18n/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastProvider';
+import { api } from '@/api';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const languages = [
   { code: 'en', name: 'English', flag: 'GB' },

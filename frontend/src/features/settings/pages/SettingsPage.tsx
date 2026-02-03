@@ -10,8 +10,8 @@ import {
 } from '@mui/material';
 import { ArrowBack, Person, Security } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import ProfileSettings from '../components/ProfileSettings';
-import SecuritySettings from '../components/SecuritySettings';
+import ProfileSettings from '@/features/settings/components/ProfileSettings';
+import SecuritySettings from '@/features/settings/components/SecuritySettings';
 
 
 interface TabPanelProps {

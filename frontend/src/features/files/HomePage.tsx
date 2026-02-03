@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Box, Typography, CircularProgress, alpha } from "@mui/material";
 import { CloudUpload } from "@mui/icons-material";
 import { Header, StoragePanel } from "@/components/layout";
-import { useTheme } from "../../contexts/ThemeProvider";
 import { useAuth } from "../../contexts/AuthContext";
 import { useToast } from "@/contexts/ToastProvider";
 import {
@@ -997,8 +996,6 @@ export const HomePage: React.FC = () => {
     if (file.name.startsWith(".")) return;
 
     try {
-      // Get directory path
-      const dir = file.path.substring(0, file.path.lastIndexOf("/") + 1);
       // New path is dir + . + name
       // Actually filesApi.rename takes current path and new NAME only
       const newName = "." + file.name;
@@ -1141,6 +1138,20 @@ export const HomePage: React.FC = () => {
     [handleUpload],
   );
 
+  const handleFileLongPress = (file: FileData) => {
+    handleSelect(file.id, true);
+    if (window.navigator.vibrate) {
+      window.navigator.vibrate(50);
+    }
+  };
+
+  const handleGridFileLongPress = (file: FileItem) => {
+    handleSelect(file.path, true);
+    if (window.navigator.vibrate) {
+      window.navigator.vibrate(50);
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -1269,20 +1280,6 @@ export const HomePage: React.FC = () => {
             >
               Folder kosong. Upload file untuk memulai.
             </Typography>
-  const handleFileLongPress = (file: FileData) => {
-    handleSelect(file.id, true);
-    if (window.navigator.vibrate) {
-      window.navigator.vibrate(50);
-    }
-  };
-
-  const handleGridFileLongPress = (file: FileItem) => {
-    handleSelect(file.path, true);
-    if (window.navigator.vibrate) {
-      window.navigator.vibrate(50);
-    }
-  };
-// ... (skip lines)
           ) : viewMode === "list" ? (
             <FileList
               files={filteredFiles}

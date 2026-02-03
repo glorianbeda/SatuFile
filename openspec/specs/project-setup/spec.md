@@ -1,7 +1,7 @@
 # project-setup Specification
 
 ## Purpose
-TBD - created by archiving change setup-project-scaffold. Update Purpose after archive.
+This specification defines the core structure and standards for the project, including backend organization, frontend architecture with standardized import aliases, and deployment patterns.
 ## Requirements
 ### Requirement: Go Backend Structure
 The system SHALL have a Go backend following filebrowser patterns with:
@@ -32,16 +32,29 @@ The system SHALL have a React frontend with TypeScript and Material UI including
 - React Context in `contexts/`
 - API client in `api/`
 - TypeScript types in `types/`
+- **Standardized internal imports using the `@` alias**
+- **Clean codebase free of unused imports and local declarations**
 
 #### Scenario: Frontend builds successfully
 - **GIVEN** the React project is set up
-- **WHEN** `pnpm build` is executed in `frontend/`
+- **WHEN** `npm run build` is executed in `frontend/`
 - **THEN** production bundle is generated in `frontend/dist/`
 
 #### Scenario: Development server starts
 - **GIVEN** dependencies are installed
-- **WHEN** `pnpm dev` is executed in `frontend/`
+- **WHEN** `npm run dev` is executed in `frontend/`
 - **THEN** the dev server starts and React app is accessible
+
+#### Scenario: Internal imports use aliases
+- **GIVEN** a file in `frontend/src` needs to import another file in `frontend/src`
+- **WHEN** the import is written
+- **THEN** it SHALL use the `@/` prefix (e.g., `@/components/...`)
+- **AND** SHALL NOT use relative paths (e.g., `../../components/...`)
+
+#### Scenario: Codebase is clean
+- **GIVEN** the frontend codebase
+- **WHEN** checked for unused imports or variables
+- **THEN** no unused declarations SHALL be present
 
 ---
 

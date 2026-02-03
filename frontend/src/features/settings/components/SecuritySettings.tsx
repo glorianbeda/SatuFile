@@ -14,9 +14,9 @@ import {
     ListItemText,
 } from '@mui/material';
 import { Lock, Check, Close } from '@mui/icons-material';
-import { useAuth } from '../../../contexts/AuthContext';
-import { useToast } from '../../../contexts/ToastProvider';
-import { api } from '../../../api';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastProvider';
+import { api } from '@/api';
 
 interface PasswordRequirement {
     label: string;

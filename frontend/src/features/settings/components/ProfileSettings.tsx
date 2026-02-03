@@ -14,11 +14,11 @@ import {
     Divider,
 } from '@mui/material';
 import { Save } from '@mui/icons-material';
-import { useAuth } from '../../../contexts/AuthContext';
-import { useToast } from '../../../contexts/ToastProvider';
-import { api } from '../../../api';
-import LanguageSelector from '../../../components/common/LanguageSelector';
-import i18n from '../../../i18n/config';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastProvider';
+import { api } from '@/api';
+import LanguageSelector from '@/components/common/LanguageSelector';
+import i18n from '@/i18n/config';
 
 export const ProfileSettings: React.FC = () => {
     const { user, updateAuth } = useAuth();

@@ -9,7 +9,7 @@ import {
     Stack,
 } from '@mui/material';
 import { Pause, PlayArrow, Close } from '@mui/icons-material';
-import { uploadsApi, type UploadSession } from '../../api/uploads';
+import { uploadsApi, type UploadSession } from '@/api/uploads';
 
 interface ResumableUploadProps {
     file: File;

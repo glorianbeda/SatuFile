@@ -21,7 +21,7 @@ import {
     DarkMode as DarkModeIcon,
     LightMode as LightModeIcon,
 } from '@mui/icons-material';
-import { useTheme as useAppTheme } from '../../contexts/ThemeProvider';
+import { useTheme as useAppTheme } from '@/contexts/ThemeProvider';
 
 const DRAWER_WIDTH = 240;
 

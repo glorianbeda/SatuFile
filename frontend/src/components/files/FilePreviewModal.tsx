@@ -10,7 +10,7 @@ import {
     Button,
 } from '@mui/material';
 import { Close, Download, ZoomIn, ZoomOut } from '@mui/icons-material';
-import { filesApi } from '../../api';
+import { filesApi } from '@/api';
 import { PdfViewer } from './PdfViewer';
 
 interface FilePreviewModalProps {

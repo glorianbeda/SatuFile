@@ -27,6 +27,7 @@ export const FileList: React.FC<FileListProps> = ({
   onSelectAll,
   onFileClick,
   onFileDoubleClick,
+  onFileLongPress,
   onDownload,
   onRename,
   onDelete,

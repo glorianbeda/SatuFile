@@ -29,9 +29,9 @@ import {
     FolderOpen,
     Share,
 } from '@mui/icons-material';
-import { SearchBar } from '../common/SearchBar';
-import { useTheme } from '../../contexts/ThemeProvider';
-import { useAuth } from '../../contexts/AuthContext';
+import { SearchBar } from '@/components/common/SearchBar';
+import { useTheme } from '@/contexts/ThemeProvider';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface HeaderProps {
     onUploadClick?: () => void;

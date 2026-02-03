@@ -25,9 +25,9 @@ import {
     SelectAll,
     Deselect,
 } from '@mui/icons-material';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/api';
-import { useToast } from '../../contexts/ToastProvider';
+import { useToast } from '@/contexts/ToastProvider';
 
 export type ViewMode = 'list' | 'grid';
 export type SortOption = 'name' | 'modified' | 'size';
