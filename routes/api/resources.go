@@ -12,10 +12,11 @@ import (
 
 	"github.com/satufile/satufile/auth"
 	"github.com/satufile/satufile/files"
+	"github.com/satufile/satufile/system/partition"
 )
 
 // ResourceGet handles GET /api/resources/{path:.*}
-func ResourceGet(deps *Deps, root string) http.HandlerFunc {
+func ResourceGet(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := auth.GetUserFromContext(r.Context())
 		if user == nil {
@@ -23,17 +24,37 @@ func ResourceGet(deps *Deps, root string) http.HandlerFunc {
 			return
 		}
 
-		// Get path from URL
+		// Use user's storage path if set, otherwise reject
+		effectiveRoot := user.StoragePath
+		if effectiveRoot == "" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error":   "setup_required",
+				"message": "Storage not initialized. Please complete setup.",
+			})
+			return
+		}
+
+		// Get path from URL and sanitize it
 		vars := mux.Vars(r)
-		path := "/" + vars["path"]
-		if path == "/" {
-			path = "/"
+		path := filepath.Clean("/" + vars["path"])
+		if strings.HasPrefix(path, "..") {
+			http.Error(w, "Invalid path", http.StatusBadRequest)
+			return
 		}
 
 		// Get file/dir info
-		info, err := files.NewFileInfo(root, path)
+		info, err := files.NewFileInfo(effectiveRoot, path)
 		if err != nil {
 			http.Error(w, "Not found", http.StatusNotFound)
+			return
+		}
+
+		// Verify the resolved path is still within effectiveRoot
+		fullPath := filepath.Join(effectiveRoot, path)
+		if !strings.HasPrefix(fullPath, filepath.Clean(effectiveRoot)) {
+			http.Error(w, "Access denied", http.StatusForbidden)
 			return
 		}
 
@@ -42,7 +63,7 @@ func ResourceGet(deps *Deps, root string) http.HandlerFunc {
 		// If directory, list contents
 		if info.IsDir {
 			hideDotfiles := user.HideDotfiles
-			listing, err := files.ReadDir(root, path, hideDotfiles)
+			listing, err := files.ReadDir(effectiveRoot, path, hideDotfiles)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -52,7 +73,6 @@ func ResourceGet(deps *Deps, root string) http.HandlerFunc {
 			links, _ := deps.Share.ListLinks()
 
 			// Create a map of shared paths for O(1) lookup
-			// and also check for folder shares that might contain current items
 			shareMap := make(map[string]bool)
 			folderShares := []string{}
 
@@ -76,12 +96,7 @@ func ResourceGet(deps *Deps, root string) http.HandlerFunc {
 				}
 
 				// 2. Parent folder match
-				// Check if any folder share contains this item
 				for _, sharePath := range folderShares {
-					// Check if itemPath is inside sharePath
-					// We use string prefix with trailing slash to ensure it's a directory match
-					// e.g. /Downloads/TestFile should be matched by /Downloads
-					// but /DownloadsTest should NOT be matched by /Downloads
 					if strings.HasPrefix(itemPath, sharePath+string(os.PathSeparator)) || itemPath == sharePath {
 						item.IsShared = true
 						break
@@ -124,7 +139,7 @@ func ResourceGet(deps *Deps, root string) http.HandlerFunc {
 }
 
 // ResourcePost handles POST /api/resources/{path:.*} (upload/create)
-func ResourcePost(deps *Deps, root string) http.HandlerFunc {
+func ResourcePost(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := auth.GetUserFromContext(r.Context())
 		if user == nil {
@@ -132,12 +147,23 @@ func ResourcePost(deps *Deps, root string) http.HandlerFunc {
 			return
 		}
 
+		// Use user's storage path if set, otherwise reject
+		effectiveRoot := user.StoragePath
+		if effectiveRoot == "" {
+			http.Error(w, "Storage not initialized", http.StatusForbidden)
+			return
+		}
+
 		vars := mux.Vars(r)
-		path := "/" + vars["path"]
+		path := filepath.Clean("/" + vars["path"])
+		if strings.HasPrefix(path, "..") {
+			http.Error(w, "Invalid path", http.StatusBadRequest)
+			return
+		}
 
 		// If path ends with /, create directory
-		if strings.HasSuffix(path, "/") {
-			fullPath := filepath.Join(root, path)
+		if strings.HasSuffix(vars["path"], "/") {
+			fullPath := filepath.Join(effectiveRoot, path)
 			if err := os.MkdirAll(fullPath, 0755); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -152,9 +178,26 @@ func ResourcePost(deps *Deps, root string) http.HandlerFunc {
 		}
 
 		// Otherwise, handle file upload
-		// Read file directly from request body (like filebrowser approach)
-		// This is more efficient for large files - no multipart parsing needed
-		fullPath := filepath.Join(root, path)
+		fullPath := filepath.Join(effectiveRoot, path)
+
+		// Verify path safety
+		if !strings.HasPrefix(fullPath, filepath.Clean(effectiveRoot)) {
+			http.Error(w, "Access denied", http.StatusForbidden)
+			return
+		}
+
+		// Check quota before saving (if file size is known from Content-Length)
+		if r.ContentLength > 0 {
+			if err := partition.CheckQuota(effectiveRoot, user.StorageAllocationGb, r.ContentLength); err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusRequestEntityTooLarge)
+				json.NewEncoder(w).Encode(map[string]string{
+					"error":   "quota_exceeded",
+					"message": err.Error(),
+				})
+				return
+			}
+		}
 
 		// Ensure parent directory exists
 		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
@@ -177,7 +220,7 @@ func ResourcePost(deps *Deps, root string) http.HandlerFunc {
 			return
 		}
 
-		info, _ := files.NewFileInfo(root, path)
+		info, _ := files.NewFileInfo(effectiveRoot, path)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(info)
@@ -205,7 +248,7 @@ func IsCoreFolder(path string) bool {
 }
 
 // ResourceDelete handles DELETE /api/resources/{path:.*}
-func ResourceDelete(deps *Deps, root string) http.HandlerFunc {
+func ResourceDelete(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := auth.GetUserFromContext(r.Context())
 		if user == nil {
@@ -213,8 +256,20 @@ func ResourceDelete(deps *Deps, root string) http.HandlerFunc {
 			return
 		}
 
+		// Use user's storage path if set, otherwise reject
+		effectiveRoot := user.StoragePath
+		if effectiveRoot == "" {
+			http.Error(w, "Storage not initialized", http.StatusForbidden)
+			return
+		}
+
 		vars := mux.Vars(r)
-		path := "/" + vars["path"]
+		path := filepath.Clean("/" + vars["path"])
+		if strings.HasPrefix(path, "..") {
+			http.Error(w, "Invalid path", http.StatusBadRequest)
+			return
+		}
+
 		if path == "/" {
 			http.Error(w, "Cannot delete root", http.StatusForbidden)
 			return
@@ -226,7 +281,14 @@ func ResourceDelete(deps *Deps, root string) http.HandlerFunc {
 			return
 		}
 
-		fullPath := filepath.Join(root, path)
+		fullPath := filepath.Join(effectiveRoot, path)
+
+		// Verify path safety
+		if !strings.HasPrefix(fullPath, filepath.Clean(effectiveRoot)) {
+			http.Error(w, "Access denied", http.StatusForbidden)
+			return
+		}
+
 		if err := os.RemoveAll(fullPath); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -242,7 +304,7 @@ type RenameRequest struct {
 }
 
 // ResourcePatch handles PATCH /api/resources/{path:.*} (rename)
-func ResourcePatch(deps *Deps, root string) http.HandlerFunc {
+func ResourcePatch(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := auth.GetUserFromContext(r.Context())
 		if user == nil {
@@ -250,8 +312,20 @@ func ResourcePatch(deps *Deps, root string) http.HandlerFunc {
 			return
 		}
 
+		// Use user's storage path if set, otherwise reject
+		effectiveRoot := user.StoragePath
+		if effectiveRoot == "" {
+			http.Error(w, "Storage not initialized", http.StatusForbidden)
+			return
+		}
+
 		vars := mux.Vars(r)
-		path := "/" + vars["path"]
+		path := filepath.Clean("/" + vars["path"])
+		if strings.HasPrefix(path, "..") {
+			http.Error(w, "Invalid path", http.StatusBadRequest)
+			return
+		}
+
 		if path == "/" {
 			http.Error(w, "Cannot rename root", http.StatusForbidden)
 			return
@@ -281,8 +355,14 @@ func ResourcePatch(deps *Deps, root string) http.HandlerFunc {
 			return
 		}
 
-		oldPath := filepath.Join(root, path)
+		oldPath := filepath.Join(effectiveRoot, path)
 		newPath := filepath.Join(filepath.Dir(oldPath), req.NewName)
+
+		// Verify path safety
+		if !strings.HasPrefix(oldPath, filepath.Clean(effectiveRoot)) || !strings.HasPrefix(newPath, filepath.Clean(effectiveRoot)) {
+			http.Error(w, "Access denied", http.StatusForbidden)
+			return
+		}
 
 		// Check if target already exists
 		if _, err := os.Stat(newPath); err == nil {
@@ -298,7 +378,7 @@ func ResourcePatch(deps *Deps, root string) http.HandlerFunc {
 
 		// Return new file info
 		newFilePath := filepath.Join(filepath.Dir(path), req.NewName)
-		info, _ := files.NewFileInfo(root, newFilePath)
+		info, _ := files.NewFileInfo(effectiveRoot, newFilePath)
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(info)

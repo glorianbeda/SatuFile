@@ -11,10 +11,12 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/satufile/satufile/auth"
+	"github.com/satufile/satufile/system/partition"
 	"github.com/satufile/satufile/uploads"
 )
 
@@ -24,11 +26,18 @@ const (
 )
 
 // UploadCreate handles POST /api/uploads - create upload session
-func UploadCreate(deps *Deps, root string) http.HandlerFunc {
+func UploadCreate(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := auth.GetUserFromContext(r.Context())
 		if user == nil {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		// Use user's storage path if set, otherwise reject
+		effectiveRoot := user.StoragePath
+		if effectiveRoot == "" {
+			http.Error(w, "Storage not initialized", http.StatusForbidden)
 			return
 		}
 
@@ -47,6 +56,21 @@ func UploadCreate(deps *Deps, root string) http.HandlerFunc {
 			http.Error(w, "Missing required fields", http.StatusBadRequest)
 			return
 		}
+
+		// Check quota
+		if err := partition.CheckQuota(user.StoragePath, user.StorageAllocationGb, req.Size); err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusRequestEntityTooLarge)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error":   "quota_exceeded",
+				"message": err.Error(),
+			})
+			return
+		}
+
+		// Sanitize path
+
+
 
 		// Generate session ID
 		sessionID := generateID()
@@ -88,11 +112,18 @@ func UploadCreate(deps *Deps, root string) http.HandlerFunc {
 }
 
 // UploadChunk handles PATCH /api/uploads/{id} - upload chunk
-func UploadChunk(deps *Deps, root string) http.HandlerFunc {
+func UploadChunk(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := auth.GetUserFromContext(r.Context())
 		if user == nil {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		// Use user's storage path if set, otherwise reject
+		effectiveRoot := user.StoragePath
+		if effectiveRoot == "" {
+			http.Error(w, "Storage not initialized", http.StatusForbidden)
 			return
 		}
 
@@ -178,8 +209,26 @@ func UploadChunk(deps *Deps, root string) http.HandlerFunc {
 				return
 			}
 
+			// Final quota check before assembly
+			if err := partition.CheckQuota(user.StoragePath, user.StorageAllocationGb, session.TotalSize); err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusRequestEntityTooLarge)
+				json.NewEncoder(w).Encode(map[string]string{
+					"error":   "quota_exceeded",
+					"message": err.Error(),
+				})
+				return
+			}
+
 			// Assemble file
-			finalPath := filepath.Join(root, session.Path)
+			finalPath := filepath.Join(effectiveRoot, filepath.Clean("/"+session.Path))
+			
+			// Verify path safety
+			if !strings.HasPrefix(finalPath, filepath.Clean(effectiveRoot)) {
+				http.Error(w, "Access denied", http.StatusForbidden)
+				return
+			}
+
 			if err := os.MkdirAll(filepath.Dir(finalPath), 0755); err != nil {
 				http.Error(w, "Failed to create directory", http.StatusInternalServerError)
 				return

@@ -12,7 +12,8 @@ import {
     AudioFile,
     Folder,
 } from '@mui/icons-material';
-import { filesApi } from '@/api';
+import { filesApi, api } from '@/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface StorageCategory {
     name: string;
@@ -21,16 +22,20 @@ interface StorageCategory {
     icon: React.ReactNode;
 }
 
+interface MeResponse {
+    storage_used_gb: number;
+    storage_available_gb: number;
+    storage_usage_percent: number;
+    storageAllocationGb: number;
+    // ... other fields
+}
+
 const formatBytes = (bytes: number): string => {
     if (bytes === 0) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-};
-
-const bytesToGB = (bytes: number): number => {
-    return bytes / (1024 * 1024 * 1024);
 };
 
 const categoryConfig: Record<string, { color: string; icon: React.ReactNode }> = {
@@ -42,6 +47,7 @@ const categoryConfig: Record<string, { color: string; icon: React.ReactNode }> =
 };
 
 export const StoragePanel: React.FC = () => {
+    const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [used, setUsed] = useState(0);
     const [total, setTotal] = useState(0);
@@ -50,14 +56,19 @@ export const StoragePanel: React.FC = () => {
     useEffect(() => {
         const fetchStorage = async () => {
             try {
+                // Get usage details per folder from /api/storage
                 const data = await filesApi.getStorage();
-                setUsed(bytesToGB(data.used));
-                setTotal(bytesToGB(data.total || 0));
+                
+                // Get accurate user-specific usage and allocation from /api/me
+                const meData = await api.get<any>("/me");
+                
+                setUsed(meData.storage_used_gb || 0);
+                setTotal(meData.storageAllocationGb || 0);
 
                 // Convert folders to categories
                 const cats: StorageCategory[] = Object.entries(data.folders).map(([name, size]) => ({
                     name,
-                    size: size,
+                    size: size as number,
                     color: categoryConfig[name]?.color || '#657786',
                     icon: categoryConfig[name]?.icon || <Folder />,
                 }));
@@ -73,7 +84,7 @@ export const StoragePanel: React.FC = () => {
         };
 
         fetchStorage();
-    }, []);
+    }, [user]);
 
     const percentage = total > 0 ? Math.min((used / total) * 100, 100) : 0;
     const displayUsed = isNaN(used) || used === 0 ? '0' : used.toFixed(1);

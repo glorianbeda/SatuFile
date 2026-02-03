@@ -37,8 +37,17 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      await login(username, password);
-      navigate(from, { replace: true });
+      // Use the login method from AuthContext which handles token storage and state updates
+      const setupRequired = await login(username, password);
+
+      // Check if setup is required
+      if (setupRequired) {
+        // Redirect to setup
+        navigate("/setup", { replace: true });
+      } else {
+        // Redirect to intended page
+        navigate(from, { replace: true });
+      }
     } catch (err) {
       setError("Invalid username or password");
     } finally {

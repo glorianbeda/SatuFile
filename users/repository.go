@@ -155,6 +155,8 @@ func (r *Repository) CreateAdmin(username, password string) error {
 		Scope:              "/",
 		Locale:             DefaultLocale,
 		MustChangePassword: true, // Force first-time password change
+		ForceSetup:         true,
+		SetupStep:          "password",
 		Perm: Permissions{
 			Admin:    true,
 			Execute:  true,

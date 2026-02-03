@@ -19,8 +19,10 @@ type LoginRequest struct {
 
 // AuthResponse is the auth response with token
 type AuthResponse struct {
-	Token string          `json:"token"`
-	User  *users.UserInfo `json:"user"`
+	Token          string          `json:"token"`
+	User           *users.UserInfo `json:"user"`
+	SetupRequired  bool            `json:"setupRequired"`
+	SetupStep      string          `json:"setupStep,omitempty"`
 }
 
 // LoginPost handles POST /api/login
@@ -78,8 +80,10 @@ func LoginPost(deps *Deps) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(AuthResponse{
-			Token: token,
-			User:  user.ToInfo(),
+			Token:         token,
+			User:          user.ToInfo(),
+			SetupRequired: user.ForceSetup || user.IsDefaultPassword,
+			SetupStep:     user.SetupStep,
 		})
 	}
 }

@@ -19,11 +19,18 @@ type StorageStats struct {
 }
 
 // StorageGet handles GET /api/storage - get storage usage stats
-func StorageGet(deps *Deps, root string) http.HandlerFunc {
+func StorageGet(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := auth.GetUserFromContext(r.Context())
 		if user == nil {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		// Use user's storage path if set, otherwise reject
+		effectiveRoot := user.StoragePath
+		if effectiveRoot == "" {
+			http.Error(w, "Storage not initialized", http.StatusForbidden)
 			return
 		}
 
@@ -33,7 +40,7 @@ func StorageGet(deps *Deps, root string) http.HandlerFunc {
 
 		// Get disk space info using syscall
 		var stat syscall.Statfs_t
-		if err := syscall.Statfs(root, &stat); err == nil {
+		if err := syscall.Statfs(effectiveRoot, &stat); err == nil {
 			// Total space = blocks * block size
 			stats.Total = int64(stat.Blocks) * int64(stat.Bsize)
 			// Free space = available blocks * block size
@@ -43,11 +50,11 @@ func StorageGet(deps *Deps, root string) http.HandlerFunc {
 		}
 
 		// Calculate per-folder sizes
-		entries, err := os.ReadDir(root)
+		entries, err := os.ReadDir(effectiveRoot)
 		if err == nil {
 			for _, entry := range entries {
 				if entry.IsDir() {
-					folderPath := filepath.Join(root, entry.Name())
+					folderPath := filepath.Join(effectiveRoot, entry.Name())
 					size := getDirSize(folderPath)
 					stats.Folders[entry.Name()] = size
 				}

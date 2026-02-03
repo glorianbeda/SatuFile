@@ -13,7 +13,7 @@ import (
 )
 
 // RawGet handles GET /api/raw/{path:.*} - stream file content for download
-func RawGet(deps *Deps, root string) http.HandlerFunc {
+func RawGet(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := auth.GetUserFromContext(r.Context())
 		if user == nil {
@@ -21,14 +21,25 @@ func RawGet(deps *Deps, root string) http.HandlerFunc {
 			return
 		}
 
+		// Use user's storage path if set, otherwise reject
+		effectiveRoot := user.StoragePath
+		if effectiveRoot == "" {
+			http.Error(w, "Storage not initialized", http.StatusForbidden)
+			return
+		}
+
 		vars := mux.Vars(r)
-		path := "/" + vars["path"]
+		path := filepath.Clean("/" + vars["path"])
+		if strings.HasPrefix(path, "..") {
+			http.Error(w, "Invalid path", http.StatusBadRequest)
+			return
+		}
 
-		fullPath := filepath.Join(root, path)
+		fullPath := filepath.Join(effectiveRoot, path)
 
-		// Security: ensure path is within root
+		// Security: ensure path is within effectiveRoot
 		cleanPath := filepath.Clean(fullPath)
-		if !strings.HasPrefix(cleanPath, filepath.Clean(root)) {
+		if !strings.HasPrefix(cleanPath, filepath.Clean(effectiveRoot)) {
 			http.Error(w, "Invalid path", http.StatusBadRequest)
 			return
 		}

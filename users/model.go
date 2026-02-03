@@ -19,11 +19,18 @@ type User struct {
 	SingleClick        bool           `gorm:"default:false" json:"singleClick"`
 	MustChangePassword bool           `gorm:"default:false" json:"mustChangePassword"`
 	Perm               Permissions    `gorm:"embedded" json:"perm"`
-	
+
 	// Lockout fields
 	FailedAttempts     int            `gorm:"default:0" json:"-"`
 	LockedUntil        *time.Time     `json:"-"`
-	
+
+	// Setup flow fields
+	ForceSetup         bool           `gorm:"default:true" json:"forceSetup"`
+	SetupStep          string         `gorm:"default:'password'" json:"setupStep"`
+	IsDefaultPassword  bool           `gorm:"default:true" json:"isDefaultPassword"`
+	StoragePath        string         `gorm:"size:500" json:"storagePath,omitempty"`
+	StorageAllocationGb int           `json:"storageAllocationGb,omitempty"`
+
 	CreatedAt          time.Time      `json:"createdAt"`
 	UpdatedAt          time.Time      `json:"updatedAt"`
 	DeletedAt          gorm.DeletedAt `gorm:"index" json:"-"`
@@ -67,6 +74,11 @@ type UserInfo struct {
 	SingleClick        bool        `json:"singleClick"`
 	MustChangePassword bool        `json:"mustChangePassword"`
 	Perm               Permissions `json:"perm"`
+	ForceSetup         bool        `json:"forceSetup"`
+	IsDefaultPassword  bool        `json:"isDefaultPassword"`
+	SetupStep          string      `json:"setupStep,omitempty"`
+	StoragePath        string      `json:"storagePath,omitempty"`
+	StorageAllocationGb int        `json:"storageAllocationGb,omitempty"`
 	CreatedAt          time.Time   `json:"createdAt"`
 }
 
@@ -83,6 +95,11 @@ func (u *User) ToInfo() *UserInfo {
 		SingleClick:        u.SingleClick,
 		MustChangePassword: u.MustChangePassword,
 		Perm:               u.Perm,
+		ForceSetup:         u.ForceSetup,
+		IsDefaultPassword:  u.IsDefaultPassword,
+		SetupStep:          u.SetupStep,
+		StoragePath:        u.StoragePath,
+		StorageAllocationGb: u.StorageAllocationGb,
 		CreatedAt:          u.CreatedAt,
 	}
 }

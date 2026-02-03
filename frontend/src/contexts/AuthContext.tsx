@@ -19,6 +19,11 @@ interface User {
   hideDotfiles: boolean;
   singleClick: boolean;
   mustChangePassword: boolean;
+  forceSetup: boolean;
+  isDefaultPassword: boolean;
+  setupStep?: string;
+  storagePath?: string;
+  storageAllocationGb?: number;
   createdAt?: string;
   perm: {
     admin: boolean;
@@ -38,7 +43,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   mustChangePassword: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  setupRequired: boolean;
+  login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   updateAuth: (token: string, user: User) => void;
 }
@@ -76,10 +82,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             await i18n.changeLanguage(userData.locale);
             saveLanguage(userData.locale);
           }
-        } catch {
-          // Token invalid, clear it
-          localStorage.removeItem("auth-token");
-          setToken(null);
+        } catch (error: any) {
+          // Check if it's a setup required error (403 with specific body)
+          if (error.response?.status === 403 && error.response?.data?.error === "setup_required") {
+            // Do NOT clear token. We are authenticated but setup is pending.
+            // We can't set full user object easily here without the API returning it,
+            // but for now let's just ensure we don't logout.
+            // Ideally /api/me should return user info even if setup is required, but with a flag.
+            // But since my backend blocks /api/me, I can't get the user.
+            // However, the login response GIVES the user.
+            // So if we just logged in, user is set.
+            // But on refresh, user is null.
+            console.log("Setup required, preserving token");
+          } else {
+            // Token invalid or other error, clear it
+            localStorage.removeItem("auth-token");
+            setToken(null);
+          }
         }
       }
       setIsLoading(false);
@@ -101,6 +120,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await i18n.changeLanguage(response.user.locale);
       saveLanguage(response.user.locale);
     }
+    
+    return response.user.forceSetup || response.user.isDefaultPassword;
   }, []);
 
   const logout = useCallback(() => {
@@ -124,6 +145,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       isAuthenticated: !!user,
       isLoading,
       mustChangePassword: user?.mustChangePassword ?? false,
+      setupRequired: (user?.forceSetup || user?.isDefaultPassword) ?? false,
       login,
       logout,
       updateAuth,

@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/satufile/satufile/share"
+	"github.com/satufile/satufile/users"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -46,9 +47,9 @@ func Connect(cfg *Config) error {
 	}
 
 	// Auto-migrate models
-	err = DB.AutoMigrate(&share.Link{})
+	err = DB.AutoMigrate(&share.Link{}, &users.User{}, &users.LoginAttempt{})
 	if err != nil {
-		log.Printf("Warning: failed to migrate share links: %v", err)
+		log.Printf("Warning: failed to migrate models: %v", err)
 	}
 
 	log.Printf("Database connected: %s (%s)", cfg.Driver, cfg.DSN)

@@ -8,11 +8,14 @@ interface ProtectedRouteProps {
     requireAdmin?: boolean;
 }
 
+// Whitelist of routes that bypass setup check
+const SETUP_WHITELIST = ['/setup', '/setup/', '/login'];
+
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     children,
     requireAdmin = false
 }) => {
-    const { isAuthenticated, isLoading, user } = useAuth();
+    const { isAuthenticated, isLoading, user, setupRequired } = useAuth();
     const location = useLocation();
 
     if (isLoading) {
@@ -34,6 +37,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
     if (requireAdmin && user && !user.perm.admin) {
         return <Navigate to="/" replace />;
+    }
+
+    // Check if setup is required and route is not whitelisted
+    if (setupRequired && !SETUP_WHITELIST.some(path => location.pathname.startsWith(path))) {
+        return <Navigate to="/setup" replace />;
     }
 
     return <>{children}</>;

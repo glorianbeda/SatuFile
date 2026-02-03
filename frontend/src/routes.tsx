@@ -7,6 +7,7 @@ import {
 import { HomePage } from "./features/files";
 import { SettingsPage } from "./features/settings";
 import { PublicSharePage } from "./features/shares";
+import { SetupWizardPage } from "./features/setup";
 import { useAuth } from "./contexts/AuthContext";
 import { useToast } from "./contexts/ToastProvider";
 
@@ -16,7 +17,7 @@ import { useToast } from "./contexts/ToastProvider";
 
 // Wrapper that shows ChangePasswordModal when needed
 const AppContent = ({ children }: { children: React.ReactNode }) => {
-  const { user, mustChangePassword, updateAuth } = useAuth();
+  const { user, mustChangePassword, setupRequired, updateAuth } = useAuth();
   const toast = useToast();
 
   const handlePasswordChangeSuccess = (token: string, newUser: any) => {
@@ -29,7 +30,7 @@ const AppContent = ({ children }: { children: React.ReactNode }) => {
       {children}
       {user && (
         <ChangePasswordModal
-          open={mustChangePassword}
+          open={mustChangePassword && !setupRequired}
           currentUsername={user.username}
           onSuccess={handlePasswordChangeSuccess}
         />
@@ -49,6 +50,9 @@ export const AppRoutes = () => {
         {/* ===== Public Routes ===== */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/share/:token" element={<PublicSharePage />} />
+
+        {/* ===== Setup Routes ===== */}
+        <Route path="/setup" element={<SetupWizardPage />} />
 
         {/* ===== Protected Routes ===== */}
         <Route
