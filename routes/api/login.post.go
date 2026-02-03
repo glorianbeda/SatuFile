@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/satufile/satufile/auth"
 
@@ -36,9 +37,16 @@ func LoginPost(deps *Deps) http.HandlerFunc {
 			return
 		}
 
+		// Get IP for recording
+		ip := r.RemoteAddr
+		if cfIP := r.Header.Get("CF-Connecting-IP"); cfIP != "" {
+			ip = cfIP
+		}
+
 		user, err := deps.UserRepo.GetByUsername(req.Username)
 		if err != nil {
 			if errors.Is(err, users.ErrUserNotFound) {
+				deps.UserRepo.RecordLoginAttempt(req.Username, ip, false)
 				http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 				return
 			}
@@ -46,10 +54,21 @@ func LoginPost(deps *Deps) http.HandlerFunc {
 			return
 		}
 
+		// Check lockout
+		if user.LockedUntil != nil && user.LockedUntil.After(time.Now()) {
+			deps.UserRepo.RecordLoginAttempt(req.Username, ip, false)
+			http.Error(w, "Account is temporarily locked. Please try again later.", http.StatusLocked)
+			return
+		}
+
 		if err := users.CheckPassword(req.Password, user.Password); err != nil {
+			deps.UserRepo.RecordLoginAttempt(req.Username, ip, false)
 			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 			return
 		}
+
+		// Success
+		deps.UserRepo.RecordLoginAttempt(req.Username, ip, true)
 
 		token, err := auth.GenerateToken(user, auth.DefaultTokenExpiration)
 		if err != nil {

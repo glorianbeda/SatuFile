@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	// DefaultTokenExpiration is the default JWT token expiration time
-	DefaultTokenExpiration = time.Hour * 2
+	// DefaultTokenExpiration is the default JWT token expiration time (reduced for security)
+	DefaultTokenExpiration = time.Hour * 1
 	// DefaultIssuer is the JWT issuer
 	DefaultIssuer = "SatuFile"
 )
@@ -29,23 +29,36 @@ type Claims struct {
 	UserID   uint   `json:"userId"`
 	Username string `json:"username"`
 	IsAdmin  bool   `json:"isAdmin"`
+	// OriginalIssuedAt tracks the very first login in a chain of renewals
+	OriginalIssuedAt int64 `json:"oia,omitempty"`
 	jwt.RegisteredClaims
 }
 
 // GenerateToken creates a new JWT token for a user
 func GenerateToken(user *users.User, expiration time.Duration) (string, error) {
+	return GenerateTokenWithOIA(user, expiration, 0)
+}
+
+// GenerateTokenWithOIA creates a new JWT token with an optional original issued at timestamp
+func GenerateTokenWithOIA(user *users.User, expiration time.Duration, oia int64) (string, error) {
 	if expiration == 0 {
 		expiration = DefaultTokenExpiration
 	}
 
+	now := time.Now()
+	if oia == 0 {
+		oia = now.Unix()
+	}
+
 	claims := &Claims{
-		UserID:   user.ID,
-		Username: user.Username,
-		IsAdmin:  user.Perm.Admin,
+		UserID:           user.ID,
+		Username:         user.Username,
+		IsAdmin:          user.Perm.Admin,
+		OriginalIssuedAt: oia,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    DefaultIssuer,
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiration)),
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(expiration)),
 		},
 	}
 

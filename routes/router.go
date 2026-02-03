@@ -4,6 +4,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/satufile/satufile/auth"
+	"github.com/satufile/satufile/middleware"
 	"github.com/satufile/satufile/routes/api"
 	"github.com/satufile/satufile/share"
 	"github.com/satufile/satufile/uploads"
@@ -38,7 +39,10 @@ func RegisterRoutes(r *mux.Router, userRepo *users.Repository, root string, shar
 
 	// Public API routes
 	apiRouter.HandleFunc("/info", api.InfoGet(apiDeps)).Methods("GET")
-	apiRouter.HandleFunc("/login", api.LoginPost(apiDeps)).Methods("POST")
+	
+	// Apply LoginRateLimit to login
+	apiRouter.Handle("/login", middleware.LoginRateLimit(api.LoginPost(apiDeps))).Methods("POST")
+	
 	apiRouter.HandleFunc("/share/public", api.SharePublicGet(apiDeps, root)).Methods("GET") // Public share access
 
 	// ===== Protected Routes =====

@@ -2,6 +2,7 @@ package users
 
 import (
 	"errors"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -23,7 +24,7 @@ func NewRepository(db *gorm.DB) *Repository {
 
 // Migrate runs database migrations for users table
 func (r *Repository) Migrate() error {
-	return r.db.AutoMigrate(&User{})
+	return r.db.AutoMigrate(&User{}, &LoginAttempt{})
 }
 
 // Create creates a new user
@@ -93,6 +94,45 @@ func (r *Repository) Count() (int64, error) {
 	var count int64
 	err := r.db.Model(&User{}).Count(&count).Error
 	return count, err
+}
+
+// RecordLoginAttempt records a login attempt and updates user lockout status if needed
+func (r *Repository) RecordLoginAttempt(username string, ip string, success bool) error {
+	attempt := &LoginAttempt{
+		Username: username,
+		IP:       ip,
+		Success:  success,
+	}
+	if err := r.db.Create(attempt).Error; err != nil {
+		return err
+	}
+
+	if success {
+		// Reset failed attempts on success
+		return r.db.Model(&User{}).Where("username = ?", username).Updates(map[string]interface{}{
+			"failed_attempts": 0,
+			"locked_until":    nil,
+		}).Error
+	}
+
+	// Increment failed attempts on failure
+	var user User
+	err := r.db.Where("username = ?", username).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil // User not found, don't track lockout but record attempt
+		}
+		return err
+	}
+
+	user.FailedAttempts++
+	if user.FailedAttempts >= 5 {
+		// Lock for 15 minutes
+		until := time.Now().Add(15 * time.Minute)
+		user.LockedUntil = &until
+	}
+
+	return r.db.Save(&user).Error
 }
 
 // CreateAdmin creates an admin user if none exists

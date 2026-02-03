@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"github.com/satufile/satufile/middleware"
 	"github.com/satufile/satufile/routes"
 	"github.com/satufile/satufile/settings"
 	"github.com/satufile/satufile/storage"
@@ -19,8 +20,9 @@ func NewHandler(cfg *settings.Config, userRepo *users.Repository, storageBackend
 	r := mux.NewRouter()
 
 	// Global middleware
-	r.Use(securityHeaders)
-	r.Use(corsMiddleware)
+	r.Use(middleware.SecurityHeaders)
+	r.Use(middleware.CORSMiddleware)
+	r.Use(middleware.GlobalRateLimit)
 
 	// Register file-based routes
 	routes.RegisterRoutes(r, userRepo, cfg.Root, storageBackend.Share, storageBackend.Uploads)
@@ -35,8 +37,9 @@ func NewHandler(cfg *settings.Config, userRepo *users.Repository, storageBackend
 func NewHandlerWithAssets(cfg *settings.Config, userRepo *users.Repository, storageBackend *storage.Storage, assets fs.FS) http.Handler {
 	r := mux.NewRouter()
 
-	r.Use(securityHeaders)
-	r.Use(corsMiddleware)
+	r.Use(middleware.SecurityHeaders)
+	r.Use(middleware.CORSMiddleware)
+	r.Use(middleware.GlobalRateLimit)
 
 	// Register file-based routes
 	routes.RegisterRoutes(r, userRepo, cfg.Root, storageBackend.Share, storageBackend.Uploads)
@@ -45,37 +48,6 @@ func NewHandlerWithAssets(cfg *settings.Config, userRepo *users.Repository, stor
 	r.PathPrefix("/").Handler(http.FileServer(http.FS(assets)))
 
 	return r
-}
-
-func corsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		origin := r.Header.Get("Origin")
-		if origin == "" {
-			origin = "*"
-		}
-		// Allow credentials requires specific origin, not wildcard
-		w.Header().Set("Access-Control-Allow-Origin", origin)
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Auth")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
-}
-
-func securityHeaders(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Relaxed CSP to allow fonts, workers, images, and blob URLs for PDF viewer
-		w.Header().Set("Content-Security-Policy", `default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; img-src 'self' data: blob:; worker-src 'self' blob: https://unpkg.com; connect-src 'self' blob:;`)
-		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("X-Frame-Options", "DENY")
-		next.ServeHTTP(w, r)
-	})
 }
 
 // spaHandler serves static files and falls back to index.html for SPA routing

@@ -1,7 +1,7 @@
 # authentication Specification
 
 ## Purpose
-TBD - created by archiving change add-authentication. Update Purpose after archive.
+This specification defines the authentication and authorization requirements for the system, including secure user login with brute force protection, token-based session management, and route protection.
 ## Requirements
 ### Requirement: User Registration
 The system SHALL allow users to register with username, password, and optional email. Passwords MUST be hashed with bcrypt before storage.
@@ -25,23 +25,29 @@ The system SHALL allow users to register with username, password, and optional e
 ---
 
 ### Requirement: User Login
-The system SHALL authenticate users via username/password and return a JWT token on success.
+The system SHALL authenticate users via username/password and return a JWT token on success. **The system SHALL implement brute force protection by tracking failed login attempts and temporarily locking accounts or implementing delays after 5 consecutive failures.**
 
 #### Scenario: Successful login
 - **GIVEN** user exists with valid credentials
 - **WHEN** POST /api/login with correct username and password
 - **THEN** JWT token is returned with user info claims
-- **AND** token expires in 2 hours
+- **AND** token expires in 1 hour
 
 #### Scenario: Invalid credentials rejected
 - **GIVEN** user submits wrong password
 - **WHEN** login is processed
 - **THEN** 401 Unauthorized is returned
 
+#### Scenario: Brute force lockout
+- **GIVEN** user has 5 consecutive failed login attempts
+- **WHEN** 6th login attempt is made
+- **THEN** 423 Locked is returned
+- **AND** account is locked for 15 minutes
+
 ---
 
 ### Requirement: Token Validation
-The system SHALL validate JWT tokens on protected routes using HS256 signature verification.
+The system SHALL validate JWT tokens on protected routes using HS256 signature verification. **Tokens SHALL be short-lived to minimize the impact of token theft.**
 
 #### Scenario: Valid token accepted
 - **GIVEN** request includes valid JWT in Authorization header

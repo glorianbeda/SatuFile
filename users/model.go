@@ -19,9 +19,23 @@ type User struct {
 	SingleClick        bool           `gorm:"default:false" json:"singleClick"`
 	MustChangePassword bool           `gorm:"default:false" json:"mustChangePassword"`
 	Perm               Permissions    `gorm:"embedded" json:"perm"`
+	
+	// Lockout fields
+	FailedAttempts     int            `gorm:"default:0" json:"-"`
+	LockedUntil        *time.Time     `json:"-"`
+	
 	CreatedAt          time.Time      `json:"createdAt"`
 	UpdatedAt          time.Time      `json:"updatedAt"`
 	DeletedAt          gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+// LoginAttempt tracks login history for security auditing and brute force protection
+type LoginAttempt struct {
+	ID        uint      `gorm:"primaryKey"`
+	Username  string    `gorm:"index;size:50"`
+	IP        string    `gorm:"index;size:50"`
+	Success   bool      `gorm:"index"`
+	CreatedAt time.Time `gorm:"index"`
 }
 
 // Permissions defines what actions a user can perform

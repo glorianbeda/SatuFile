@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/satufile/satufile/auth"
 	fbhttp "github.com/satufile/satufile/http"
 	"github.com/satufile/satufile/settings"
 	"github.com/satufile/satufile/storage"
@@ -54,11 +55,13 @@ func init() {
 	rootCmd.Flags().IntP("port", "p", 8080, "port to listen on")
 	rootCmd.Flags().StringP("root", "r", ".", "root directory to serve")
 	rootCmd.Flags().StringP("database", "d", "satufile.db", "database file path")
+	rootCmd.Flags().String("jwt-secret", "", "JWT secret key (overrides environment variable)")
 
 	viper.BindPFlag("address", rootCmd.Flags().Lookup("address"))
 	viper.BindPFlag("port", rootCmd.Flags().Lookup("port"))
 	viper.BindPFlag("root", rootCmd.Flags().Lookup("root"))
 	viper.BindPFlag("database", rootCmd.Flags().Lookup("database"))
+	viper.BindPFlag("jwt_secret", rootCmd.Flags().Lookup("jwt-secret"))
 }
 
 func initConfig() {
@@ -105,6 +108,16 @@ func runServer(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 	defer storage.Close()
+
+	// Initialize JWT secret
+	jwtSecret := viper.GetString("jwt_secret")
+	if jwtSecret != "" {
+		auth.SetSecretKey(jwtSecret)
+	} else if os.Getenv("SATUFILE_JWT_SECRET") != "" {
+		auth.SetSecretKey(os.Getenv("SATUFILE_JWT_SECRET"))
+	} else {
+		log.Println("Warning: No JWT secret set. Using default development key. PLEASE SET SATUFILE_JWT_SECRET IN PRODUCTION!")
+	}
 
 	// Initialize storage backend
 	storageBackend, err := storage.New()
