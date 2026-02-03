@@ -13,5 +13,5 @@ echo "Building Backend..."
 go build -o satufile main.go
 
 echo "Build Complete!"
-echo "Run with: ./satufile server"
+echo "Run with: ./satufile"
 echo "Or with PM2: pm2 start ecosystem.config.js"

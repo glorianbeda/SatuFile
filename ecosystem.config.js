@@ -3,7 +3,7 @@ module.exports = {
     {
       name: "satufile",
       script: "./satufile",
-      args: "server --port 8080 --root ./data",
+      args: "--port 8080 --root ./data",
       env: {
         NODE_ENV: "production",
         SATUFILE_JWT_SECRET: "change-me-in-production-please", // User should change this
