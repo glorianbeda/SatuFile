@@ -1,0 +1,34 @@
+name: CD - Auto Deploy to Home Server
+
+# Workflow ini akan berjalan setiap kali ada 'push' ke branch 'main'
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          # Alamat IP server atau domain (misal: home.yourdomain.com atau IP publik)
+          host: ${{ secrets.SSH_HOST }}
+          
+          # User yang digunakan untuk SSH (disarankan user terbatas, lihat panduan di bawah)
+          username: ${{ secrets.SSH_USER }}
+          
+          # Isi dari Private Key SSH (id_rsa) yang sudah didaftarkan di server
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          
+          # Port SSH server Anda (default 22)
+          port: ${{ secrets.SSH_PORT }}
+          
+          # Perintah yang dijalankan di server setelah berhasil login
+          script: |
+            # Masuk ke direktori project
+            cd ~/SatuFile
+            
+            # Jalankan skrip deploy yang sudah kita buat
+            # Skrip ini akan melakukan git pull, npm build, dan go build
+            ./deploy.sh
