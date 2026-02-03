@@ -75,10 +75,6 @@ export const SetupWizardPage: React.FC = () => {
 		setCurrentStep("drive");
 	};
 
-	const handleDriveSelect = (drive: string, size_gb: number) => {
-		setDriveData({ drive, size_gb });
-	};
-
 	const handleDriveContinue = (drive: string) => {
 		// Find the drive info when we implement it
 		// For now, just set a default size
@@ -157,7 +153,6 @@ export const SetupWizardPage: React.FC = () => {
 					{/* Steps */}
 					{currentStep === "password" && (
 						<PasswordSetupStep
-							currentUsername={user?.username || ""}
 							onSuccess={handlePasswordSuccess}
 						/>
 					)}

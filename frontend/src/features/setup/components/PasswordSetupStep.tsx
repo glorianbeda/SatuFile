@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-	Box,
 	Card,
 	CardContent,
 	TextField,
@@ -16,12 +15,10 @@ import { api } from "../../../api";
 
 interface PasswordSetupStepProps {
 	onSuccess: () => void;
-	currentUsername: string;
 }
 
 export const PasswordSetupStep: React.FC<PasswordSetupStepProps> = ({
 	onSuccess,
-	currentUsername,
 }) => {
 	const { updateAuth } = useAuth();
 	const [newPassword, setNewPassword] = useState("");

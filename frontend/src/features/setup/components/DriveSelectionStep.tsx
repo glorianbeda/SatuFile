@@ -4,13 +4,9 @@ import {
 	Card,
 	CardContent,
 	Typography,
-	Grid,
-	LinearProgress,
 	Alert,
-	Skeleton,
 	CircularProgress,
 } from "@mui/material";
-import { Storage, SdStorage } from "@mui/icons-material";
 import { Button } from "../../../components/common";
 import { api } from "../../../api";
 

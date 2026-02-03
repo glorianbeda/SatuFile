@@ -22,14 +22,6 @@ interface StorageCategory {
     icon: React.ReactNode;
 }
 
-interface MeResponse {
-    storage_used_gb: number;
-    storage_available_gb: number;
-    storage_usage_percent: number;
-    storageAllocationGb: number;
-    // ... other fields
-}
-
 const formatBytes = (bytes: number): string => {
     if (bytes === 0) return '0 B';
     const k = 1024;
