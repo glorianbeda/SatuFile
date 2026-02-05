@@ -220,11 +220,11 @@ export const FileGrid: React.FC<FileGridProps> = ({
                                 )}
                             </Box>
                         ) : (
-                            <FileIcon 
-                                type={file.isDir ? 'folder' : 'file'} 
-                                extension={file.extension} 
-                                size="large" 
-                                isShared={file.isShared} 
+                            <FileIcon
+                                type={file.isDir ? 'folder' : 'file'}
+                                extension={file.extension}
+                                size="large"
+                                isShared={file.isShared}
                             />
                         )}
 

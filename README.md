@@ -12,31 +12,52 @@ A modern cloud drive web application inspired by filebrowser.
 - 🔒 Protected core folders (Documents, Pictures, Videos, Audio, Downloads)
 - 🔗 Share links for files and folders
 - 🌐 Multi-language support (English & Indonesian)
+- 🗑️ Trash bin with restore capability
+- 🔍 Global file search
+- 📊 Storage usage analysis
 
 ## Quick Start
 
-### Option 1: Docker Compose (Recommended)
+### Prerequisites
+
+- [Go](https://go.dev/dl/) 1.21+ 
+- [Node.js](https://nodejs.org/) 18+
+- [PM2](https://pm2.keymetrics.io/) (install globally: `npm install -g pm2`)
+
+### Installation
 
 ```bash
 # Clone the repository
 git clone https://github.com/satufile/satufile.git
 cd satufile
 
-# Start with Docker Compose
-docker-compose up -d
+# Create data directory
+mkdir -p ./data
 
-# Access at http://localhost:8080
-```
+# Install frontend dependencies
+cd frontend
+npm install
+cd ..
 
-### Option 2: Manual
-
-```bash
 # Build the application
-go build -o satufile
+go build -o satufile .
 
-# Run with data directory
-./satufile -r ./data -p 8080
+# Create logs directory for PM2
+mkdir -p ./logs
+
+# Start with PM2
+pm2 start ecosystem.config.js
+
+# Save PM2 process list for restart
+pm2 save
+
+# Setup startup script (run as root or with sudo)
+pm2 startup
 ```
+
+### Access
+
+Access at http://localhost:8080
 
 ## Default Credentials
 
@@ -131,21 +152,76 @@ chown -R $(whoami) ./data
 ./satufile -a 0.0.0.0 -p 8080 -r ./data -d ./data/satufile.db
 ```
 
-## Docker Deployment
+## PM2 Deployment
 
-### docker-compose.yml
+### Ecosystem Configuration
 
-```yaml
-version: '3.8'
-services:
-  satufile:
-    image: satufile:latest
-    ports:
-      - "8080:8080"
-    volumes:
-      - ./data:/data
-    environment:
-      - SATUFILE_ROOT=/data
+The `ecosystem.config.js` file defines how PM2 manages the application:
+
+```javascript
+module.exports = {
+  apps: [{
+    name: "satufile",
+    script: "./satufile",
+    args: "--port ${PORT:-8080} --root ${SATUFILE_ROOT:-./data}",
+    env: {
+      NODE_ENV: "development",
+      PORT: 8080,
+      SATUFILE_ROOT: "./data",
+    },
+    env_production: {
+      NODE_ENV: "production",
+      SATUFILE_JWT_SECRET: "change-me-in-production-please",
+    },
+    instances: 1,
+    max_memory_restart: "1G",
+  }],
+};
+```
+
+### PM2 Commands
+
+```bash
+# Start application
+pm2 start ecosystem.config.js
+
+# Start in production mode
+pm2 start ecosystem.config.js --env production
+
+# Restart application
+pm2 restart satufile
+
+# Reload (zero-downtime)
+pm2 reload satufile
+
+# Stop application
+pm2 stop satufile
+
+# View logs
+pm2 logs satufile
+
+# View logs with line limit
+pm2 logs --lines 100
+
+# Monitor in real-time
+pm2 monit
+
+# View process status
+pm2 list
+pm2 status
+
+# Save current process list
+pm2 save
+
+# Restore saved processes
+pm2 resurrect
+
+# Setup startup script (run as root)
+pm2 startup
+sudo env PATH=$PATH:/usr/local/bin /usr/local/lib/node_modules/pm2/bin/pm2 startup systemd -u $USER --hp /home/$USER
+
+# Delete from PM2
+pm2 delete satufile
 ```
 
 ### With Reverse Proxy (Nginx)
@@ -163,6 +239,29 @@ server {
     }
 }
 ```
+
+### Directory Structure
+
+```
+satufile/
+├── satufile          # Compiled binary
+├── ecosystem.config.js  # PM2 configuration
+├── data/             # Data directory
+├── logs/             # PM2 logs
+├── frontend/         # Frontend source
+└── package.json      # Frontend dependencies
+```
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| PORT | 8080 | Listen port |
+| SATUFILE_ROOT | ./data | Root data directory |
+| SATUFILE_DATABASE | ./data/satufile.db | Database file path |
+| SATUFILE_ADDRESS | 0.0.0.0 | Listen address |
+| SATUFILE_JWT_SECRET | - | JWT secret (production) |
+| NODE_ENV | development | Environment mode |
 
 ## Development
 

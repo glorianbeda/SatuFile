@@ -5,7 +5,7 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const apiUrl = env.VITE_API_URL || 'http://localhost:8081'
+  const apiUrl = env.VITE_API_URL || 'http://127.0.0.1:8080'
 
   return {
     plugins: [react()],
@@ -21,6 +21,7 @@ export default defineConfig(({ mode }) => {
           target: apiUrl,
           changeOrigin: true,
           cookieDomainRewrite: '',
+          ws: true,
         },
         '/health': {
           target: apiUrl,

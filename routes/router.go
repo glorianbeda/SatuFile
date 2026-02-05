@@ -83,7 +83,18 @@ func RegisterAPIRoutes(r *mux.Router, apiDeps *api.Deps) {
 	protectedAPI.HandleFunc("/raw/{path:.*}", api.RawGet(apiDeps)).Methods("GET")
 
 	// Storage usage
-	protectedAPI.HandleFunc("/storage", api.StorageGet(apiDeps)).Methods("GET")
+	protectedAPI.HandleFunc("/storage", api.StorageStatsGet(apiDeps)).Methods("GET")
+	protectedAPI.HandleFunc("/storage/stats", api.StorageStatsGet(apiDeps)).Methods("GET")
+	protectedAPI.HandleFunc("/storage/usage", api.StorageUsageGet(apiDeps)).Methods("GET")
+
+	// Search
+	protectedAPI.HandleFunc("/search", api.SearchGet(apiDeps)).Methods("GET")
+
+	// Trash endpoints
+	protectedAPI.HandleFunc("/trash", api.TrashGet(apiDeps)).Methods("GET")
+	protectedAPI.HandleFunc("/trash", api.TrashEmpty(apiDeps)).Methods("DELETE")
+	protectedAPI.HandleFunc("/trash/{id}/restore", api.TrashRestore(apiDeps)).Methods("POST")
+	protectedAPI.HandleFunc("/trash/{id}", api.TrashDelete(apiDeps)).Methods("DELETE")
 
 	// Share endpoints
 	protectedAPI.HandleFunc("/share", api.SharePost(apiDeps)).Methods("POST")

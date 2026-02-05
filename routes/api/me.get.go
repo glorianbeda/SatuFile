@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"github.com/satufile/satufile/auth"
+	"github.com/satufile/satufile/storage"
+	"github.com/satufile/satufile/trash"
 	"github.com/satufile/satufile/system/partition"
 	"github.com/satufile/satufile/users"
 )
@@ -17,6 +19,7 @@ type MeResponse struct {
 	StorageUsagePercent float64 `json:"storage_usage_percent,omitempty"`
 	IsNearlyFull        bool    `json:"is_nearly_full,omitempty"`
 	IsFull              bool    `json:"is_full,omitempty"`
+	TrashCount          int64   `json:"trash_count"`
 }
 
 // MeGet handles GET /api/me
@@ -56,6 +59,11 @@ func MeGet(deps *Deps) http.HandlerFunc {
 			response.IsNearlyFull = usagePercent >= 90
 			response.IsFull = usagePercent >= 100
 		}
+
+		// Get trash count
+		var count int64
+		storage.GetDB().Model(&trash.TrashItem{}).Count(&count)
+		response.TrashCount = count
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(response)

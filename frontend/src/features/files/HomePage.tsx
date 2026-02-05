@@ -137,7 +137,7 @@ export const HomePage: React.FC = () => {
     if (lastMessage?.type === 'FS_EVENT') {
       const { path, op } = lastMessage.payload;
       console.log('Real-time FS event:', op, path);
-      
+
       // Refresh if the event is related to current directory
       // Simplification: refresh on any FS event for now to ensure consistency
       fetchFiles();
@@ -276,14 +276,14 @@ export const HomePage: React.FC = () => {
       } else {
         next = prev.length === 1 && prev[0] === id ? [] : [id];
       }
-      
+
       // Manage multi-select mode flag
       if (next.length === 0) {
         setIsMultiSelectMode(false);
       } else if (next.length > 1) {
         setIsMultiSelectMode(true);
       }
-      
+
       return next;
     });
   };
@@ -316,7 +316,7 @@ export const HomePage: React.FC = () => {
         e.preventDefault();
         handleSelectAll();
       }
-      
+
       if (e.key === "Escape") {
         handleUnselectAll();
       }
@@ -1012,7 +1012,7 @@ export const HomePage: React.FC = () => {
       // Refresh file list
       const data = await filesApi.list(currentPath, sortBy, sortOrder);
       setListing(data);
-      toast.success("File berhasil dihapus");
+      toast.success("File moved to trash");
     } catch (err: any) {
       toast.error(err.response?.data || "Gagal menghapus file");
     } finally {
@@ -1027,9 +1027,9 @@ export const HomePage: React.FC = () => {
       // New path is dir + . + name
       // Actually filesApi.rename takes current path and new NAME only
       const newName = "." + file.name;
-      
+
       await filesApi.rename(file.path, newName);
-      
+
       // Refresh file list
       const data = await filesApi.list(currentPath, sortBy, sortOrder);
       setListing(data);
@@ -1056,7 +1056,7 @@ export const HomePage: React.FC = () => {
     handleDeleteConfirm(fileDataToContextItem(file));
   const handleFilePreview = (file: FileData) =>
     handlePreview(fileDataToContextItem(file));
-  const handleFileHide = (file: FileData) => 
+  const handleFileHide = (file: FileData) =>
     handleHide(fileDataToContextItem(file));
   const handleFileShare = (file: FileData) => {
     setShareFile(fileDataToContextItem(file));
@@ -1100,7 +1100,15 @@ export const HomePage: React.FC = () => {
       setShareUrl(url);
     } catch (err: any) {
       console.error("Error creating share:", err);
-      toast.error(err.message || "Gagal membuat link share");
+      if (err.message && err.message.includes("404")) {
+        toast.error("File tidak ditemukan. Menyegarkan daftar...");
+        // Refresh file list
+        const data = await filesApi.list(currentPath, sortBy, sortOrder);
+        setListing(data);
+        setShareOpen(false);
+      } else {
+        toast.error(err.message || "Gagal membuat link share");
+      }
     } finally {
       setIsCreatingShare(false);
     }

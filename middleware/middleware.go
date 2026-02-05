@@ -10,13 +10,13 @@ import (
 
 // visitor represents a client's rate limit state
 type visitor struct {
-	limiter  *rate.Limiter
+	limiter *rate.Limiter
 }
 
 var (
-	visitors = make(map[string]*visitor)
+	visitors      = make(map[string]*visitor)
 	loginVisitors = make(map[string]*visitor)
-	mu       sync.Mutex
+	mu            sync.Mutex
 )
 
 // getVisitor returns a rate limiter for the given IP address
@@ -55,7 +55,7 @@ func getLoginVisitor(ip string) *rate.Limiter {
 func GlobalRateLimit(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ip, _, _ := net.SplitHostPort(r.RemoteAddr)
-		
+
 		// Check Cloudflare header if available
 		if cfIP := r.Header.Get("CF-Connecting-IP"); cfIP != "" {
 			ip = cfIP
@@ -77,7 +77,7 @@ func GlobalRateLimit(next http.Handler) http.Handler {
 func LoginRateLimit(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ip, _, _ := net.SplitHostPort(r.RemoteAddr)
-		
+
 		if cfIP := r.Header.Get("CF-Connecting-IP"); cfIP != "" {
 			ip = cfIP
 		} else if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
@@ -98,15 +98,15 @@ func LoginRateLimit(next http.Handler) http.Handler {
 func SecurityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Relaxed CSP to allow fonts, workers, images, and blob URLs for PDF viewer
-		w.Header().Set("Content-Security-Policy", `default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; img-src 'self' data: blob:; worker-src 'self' blob: https://unpkg.com; connect-src 'self' blob:;`)
+		w.Header().Set("Content-Security-Policy", `default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; img-src 'self' data: blob:; worker-src 'self' blob: https://unpkg.com; connect-src 'self' blob: ws: wss:;`)
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "DENY")
 		w.Header().Set("X-XSS-Protection", "1; mode=block")
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-		
+
 		// If on HTTPS (common with Cloudflare Tunnel), add HSTS
 		w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
-		
+
 		next.ServeHTTP(w, r)
 	})
 }

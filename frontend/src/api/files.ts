@@ -141,6 +141,43 @@ export const filesApi = {
     }
     return api.get(url);
   },
+
+  // Search files
+  search: (query: string): Promise<{ results: FileInfo[] }> => {
+    return api.get(`/search?q=${encodeURIComponent(query)}`);
+  },
+
+  // Get storage stats (detailed)
+  getStorageStats: (): Promise<{
+    used: number;
+    total: number;
+    free: number;
+    folders: Record<string, number>;
+  }> => {
+    return api.get("/storage/stats");
+  },
+
+  // Get storage usage (summary)
+  getStorageUsage: (): Promise<{ used: number; total: number; free: number }> => {
+    return api.get("/storage/usage");
+  },
+
+  // Trash API
+  getTrash: (): Promise<any[]> => {
+    return api.get("/trash");
+  },
+
+  restoreTrash: (id: number): Promise<void> => {
+    return api.post(`/trash/${id}/restore`);
+  },
+
+  deleteTrash: (id: number): Promise<void> => {
+    return api.delete(`/trash/${id}`);
+  },
+
+  emptyTrash: (): Promise<void> => {
+    return api.delete("/trash");
+  },
 };
 
 export default filesApi;

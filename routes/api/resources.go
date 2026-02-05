@@ -2,16 +2,20 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 
 	"github.com/satufile/satufile/auth"
 	"github.com/satufile/satufile/files"
+	"github.com/satufile/satufile/storage"
+	"github.com/satufile/satufile/trash"
 	"github.com/satufile/satufile/system/partition"
 )
 
@@ -289,10 +293,49 @@ func ResourceDelete(deps *Deps) http.HandlerFunc {
 			return
 		}
 
-		if err := os.RemoveAll(fullPath); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		// Get file info for DB
+		info, err := files.NewFileInfo(effectiveRoot, path)
+		if err != nil {
+			http.Error(w, "File not found", http.StatusNotFound)
 			return
 		}
+
+		// Start transaction
+		tx := storage.GetDB().Begin()
+
+		// Create trash record
+		item := &trash.TrashItem{
+			OriginalPath: path,
+			DeletedAt:    time.Now(),
+			FileSize:     info.Size,
+			IsDirectory:  info.IsDir,
+			Name:         info.Name,
+		}
+
+		if err := tx.Create(item).Error; err != nil {
+			tx.Rollback()
+			http.Error(w, "Database error", http.StatusInternalServerError)
+			return
+		}
+
+		// Create .trash dir if not exists
+		trashDir := filepath.Join(effectiveRoot, ".trash")
+		if err := os.MkdirAll(trashDir, 0755); err != nil {
+			tx.Rollback()
+			http.Error(w, "Failed to create trash directory", http.StatusInternalServerError)
+			return
+		}
+
+		// Move file to .trash/{id}
+		// We use ID to avoid name conflicts in trash
+		trashPath := filepath.Join(trashDir, fmt.Sprintf("%d", item.ID))
+		if err := os.Rename(fullPath, trashPath); err != nil {
+			tx.Rollback()
+			http.Error(w, "Failed to move to trash: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		tx.Commit()
 
 		w.WriteHeader(http.StatusNoContent)
 	}

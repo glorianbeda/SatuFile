@@ -1,113 +1,49 @@
-import React, { useState } from 'react';
-import {
-    Box,
-    AppBar,
-    Toolbar,
-    Typography,
-    IconButton,
-    Drawer,
-    List,
-    ListItem,
-    ListItemButton,
-    ListItemIcon,
-    ListItemText,
-    useTheme,
-    useMediaQuery,
-} from '@mui/material';
-import {
-    Menu as MenuIcon,
-    Folder as FolderIcon,
-    Settings as SettingsIcon,
-    DarkMode as DarkModeIcon,
-    LightMode as LightModeIcon,
-} from '@mui/icons-material';
-import { useTheme as useAppTheme } from '@/contexts/ThemeProvider';
+import React from 'react';
+import { Box, Drawer, CssBaseline } from '@mui/material';
+import { Sidebar } from './Sidebar';
+import { LayoutProvider, useLayout } from '@/contexts/LayoutContext';
 
-const DRAWER_WIDTH = 240;
+const DRAWER_WIDTH = 250;
 
-interface LayoutProps {
+interface LayoutContentProps {
     children: React.ReactNode;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children }) => {
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-    const [mobileOpen, setMobileOpen] = useState(false);
-    const { mode, toggleTheme } = useAppTheme();
-
-    const handleDrawerToggle = () => {
-        setMobileOpen(!mobileOpen);
-    };
-
-    const menuItems = [
-        { text: 'Files', icon: <FolderIcon /> },
-        { text: 'Settings', icon: <SettingsIcon /> },
-    ];
-
-    const drawer = (
-        <Box>
-            <Toolbar>
-                <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 'bold' }}>
-                    SatuFile
-                </Typography>
-            </Toolbar>
-            <List>
-                {menuItems.map((item) => (
-                    <ListItem key={item.text} disablePadding>
-                        <ListItemButton>
-                            <ListItemIcon>{item.icon}</ListItemIcon>
-                            <ListItemText primary={item.text} />
-                        </ListItemButton>
-                    </ListItem>
-                ))}
-            </List>
-        </Box>
-    );
+const LayoutContent: React.FC<LayoutContentProps> = ({ children }) => {
+    const { mobileOpen, toggleSidebar } = useLayout();
 
     return (
         <Box sx={{ display: 'flex' }}>
-            <AppBar
-                position="fixed"
-                sx={{
-                    width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
-                    ml: { md: `${DRAWER_WIDTH}px` },
-                }}
-            >
-                <Toolbar>
-                    <IconButton
-                        color="inherit"
-                        edge="start"
-                        onClick={handleDrawerToggle}
-                        sx={{ mr: 2, display: { md: 'none' } }}
-                    >
-                        <MenuIcon />
-                    </IconButton>
-                    <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-                        Dashboard
-                    </Typography>
-                    <IconButton color="inherit" onClick={toggleTheme}>
-                        {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
-                    </IconButton>
-                </Toolbar>
-            </AppBar>
-
+            <CssBaseline />
+            
             <Box
                 component="nav"
                 sx={{ width: { md: DRAWER_WIDTH }, flexShrink: { md: 0 } }}
             >
+                {/* Mobile Drawer */}
                 <Drawer
-                    variant={isMobile ? 'temporary' : 'permanent'}
-                    open={isMobile ? mobileOpen : true}
-                    onClose={handleDrawerToggle}
+                    variant="temporary"
+                    open={mobileOpen}
+                    onClose={toggleSidebar}
                     ModalProps={{ keepMounted: true }}
                     sx={{
-                        '& .MuiDrawer-paper': {
-                            boxSizing: 'border-box',
-                            width: DRAWER_WIDTH,
-                        },
+                        display: { xs: 'block', md: 'none' },
+                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH },
                     }}
                 >
-                    {drawer}
+                    <Sidebar onClose={toggleSidebar} />
+                </Drawer>
+                
+                {/* Desktop Drawer */}
+                <Drawer
+                    variant="permanent"
+                    sx={{
+                        display: { xs: 'none', md: 'block' },
+                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH },
+                    }}
+                    open
+                >
+                    <Sidebar />
                 </Drawer>
             </Box>
 
@@ -115,14 +51,23 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 component="main"
                 sx={{
                     flexGrow: 1,
-                    p: 3,
                     width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
-                    mt: '64px',
+                    minHeight: '100vh',
+                    display: 'flex',
+                    flexDirection: 'column',
                 }}
             >
                 {children}
             </Box>
         </Box>
+    );
+};
+
+export const Layout: React.FC<LayoutContentProps> = ({ children }) => {
+    return (
+        <LayoutProvider>
+            <LayoutContent>{children}</LayoutContent>
+        </LayoutProvider>
     );
 };
 

@@ -120,7 +120,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await i18n.changeLanguage(response.user.locale);
       saveLanguage(response.user.locale);
     }
-    
+
     return response.user.forceSetup || response.user.isDefaultPassword;
   }, []);
 

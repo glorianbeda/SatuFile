@@ -8,8 +8,11 @@ import { HomePage } from "./features/files";
 import { SettingsPage } from "./features/settings";
 import { PublicSharePage } from "./features/shares";
 import { SetupWizardPage } from "./features/setup";
+import { StoragePage } from "./features/storage";
+import { TrashPage } from "./features/trash";
 import { useAuth } from "./contexts/AuthContext";
 import { useToast } from "./contexts/ToastProvider";
+import { Layout } from "@/components/layout";
 
 // =====================================================
 // Route Configuration
@@ -59,7 +62,9 @@ export const AppRoutes = () => {
           path="/"
           element={
             <ProtectedRoute>
-              <HomePage />
+              <Layout>
+                <HomePage />
+              </Layout>
             </ProtectedRoute>
           }
         />
@@ -69,18 +74,42 @@ export const AppRoutes = () => {
           path="/files/*"
           element={
             <ProtectedRoute>
-              <HomePage />
+              <Layout>
+                <HomePage />
+              </Layout>
             </ProtectedRoute>
           }
         />
-
-
 
         <Route
           path="/settings"
           element={
             <ProtectedRoute>
-              <SettingsPage />
+              <Layout>
+                <SettingsPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/storage"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <StoragePage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/trash"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <TrashPage />
+              </Layout>
             </ProtectedRoute>
           }
         />

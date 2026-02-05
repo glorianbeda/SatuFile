@@ -28,10 +28,12 @@ import {
     CreateNewFolder,
     FolderOpen,
     Share,
+    Menu as MenuIcon,
 } from '@mui/icons-material';
-import { SearchBar } from '@/components/common/SearchBar';
+import { SearchInput } from './SearchInput';
 import { useTheme } from '@/contexts/ThemeProvider';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLayout } from '@/contexts/LayoutContext';
 
 interface HeaderProps {
     onUploadClick?: () => void;
@@ -45,6 +47,7 @@ export const Header: React.FC<HeaderProps> = ({ onUploadClick, onFolderUploadCli
     const muiTheme = useMuiTheme();
     const { mode, toggleTheme } = useTheme();
     const { user, logout } = useAuth();
+    const { toggleSidebar } = useLayout();
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const [createAnchorEl, setCreateAnchorEl] = React.useState<null | HTMLElement>(null);
     const [searchOpen, setSearchOpen] = React.useState(false);
@@ -98,7 +101,8 @@ export const Header: React.FC<HeaderProps> = ({ onUploadClick, onFolderUploadCli
                 bgcolor: 'background.paper',
                 borderBottom: '1px solid',
                 borderColor: 'divider',
-                width: '100%',
+                width: { md: `calc(100% - 250px)` },
+                ml: { md: `250px` },
                 top: 0,
                 zIndex: 1100,
                 backdropFilter: 'blur(10px)',
@@ -115,6 +119,16 @@ export const Header: React.FC<HeaderProps> = ({ onUploadClick, onFolderUploadCli
                     minHeight: { xs: 56, sm: 64 },
                 }}
             >
+                {/* Mobile Menu Button */}
+                <IconButton
+                    color="inherit"
+                    edge="start"
+                    onClick={toggleSidebar}
+                    sx={{ mr: 2, display: { md: 'none' } }}
+                >
+                    <MenuIcon />
+                </IconButton>
+
                 {/* Logo */}
                 <Box
                     component="img"
@@ -143,7 +157,7 @@ export const Header: React.FC<HeaderProps> = ({ onUploadClick, onFolderUploadCli
                             <Search />
                         </IconButton>
                     ) : (
-                        <SearchBar fullWidth />
+                        <SearchInput fullWidth />
                     )}
                 </Box>
 
@@ -274,19 +288,17 @@ export const Header: React.FC<HeaderProps> = ({ onUploadClick, onFolderUploadCli
                                     {user?.perm?.admin ? 'Administrator' : 'User'}
                                 </Typography>
                             </Box>
-                            {isMobile && (
-                                <>
-                                    <MenuItem onClick={handleClose}>
-                                        <Notifications sx={{ mr: 1, fontSize: 20 }} /> Notifications
-                                    </MenuItem>
-                                    <MenuItem onClick={() => { handleClose(); onSharesClick?.(); }}>
-                                        <Share sx={{ mr: 1, fontSize: 20 }} /> Kelola Share
-                                    </MenuItem>
-                                    <MenuItem onClick={handleClose}>
-                                        <Add sx={{ mr: 1, fontSize: 20 }} /> Create New
-                                    </MenuItem>
-                                </>
-                            )}
+                            {isMobile && [
+                                <MenuItem key="notifications" onClick={handleClose}>
+                                    <Notifications sx={{ mr: 1, fontSize: 20 }} /> Notifications
+                                </MenuItem>,
+                                <MenuItem key="share" onClick={() => { handleClose(); onSharesClick?.(); }}>
+                                    <Share sx={{ mr: 1, fontSize: 20 }} /> Kelola Share
+                                </MenuItem>,
+                                <MenuItem key="add" onClick={handleClose}>
+                                    <Add sx={{ mr: 1, fontSize: 20 }} /> Create New
+                                </MenuItem>
+                            ]}
                             <MenuItem onClick={() => { handleClose(); navigate('/settings'); }}>
                                 <Person sx={{ mr: 1, fontSize: 20 }} /> Profile
                             </MenuItem>

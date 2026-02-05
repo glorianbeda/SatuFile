@@ -7,12 +7,26 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/satufile/satufile/auth"
 	"github.com/satufile/satufile/share"
 )
 
 // SharePost handles POST /api/share
 func SharePost(deps *Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		user := auth.GetUserFromContext(r.Context())
+		if user == nil {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		// Use user's storage path if set, otherwise reject
+		effectiveRoot := user.StoragePath
+		if effectiveRoot == "" {
+			http.Error(w, "Storage not initialized", http.StatusForbidden)
+			return
+		}
+
 		var req struct {
 			Path     string `json:"path"`
 			Type     string `json:"type"`               // "file" or "folder"
@@ -33,7 +47,7 @@ func SharePost(deps *Deps) http.HandlerFunc {
 		}
 
 		// Validate path exists
-		fullPath := filepath.Join(deps.DataDir, req.Path)
+		fullPath := filepath.Join(effectiveRoot, req.Path)
 		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
 			http.Error(w, "File or folder not found", http.StatusNotFound)
 			return
